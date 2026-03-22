@@ -4,20 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>O.cut · 오늘 네컷</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
   <style>
     :root{
-      --bg1:#fff7fb;
-      --bg2:#ffeef6;
-      --card: rgba(255,255,255,.86);
-      --stroke: rgba(255,160,200,.34);
+      --bg1:#ffffff;
+      --bg2:#fff8fb;
+      --card: rgba(255,255,255,.92);
+      --stroke: rgba(255,160,200,.28);
       --text:#2b1b22;
       --muted:#7b5a69;
 
       --pri:#ff6fb3;
       --pri2:#ffb3d3;
-      --shadow: 0 18px 60px rgba(31,15,24,.12);
-      --shadow2: 0 10px 26px rgba(31,15,24,.08);
+      --shadow: 0 18px 60px rgba(31,15,24,.10);
+      --shadow2: 0 10px 26px rgba(31,15,24,.06);
 
       --r24:24px;
       --r18:18px;
@@ -33,8 +34,8 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
       color:var(--text);
       background:
-        radial-gradient(1100px 900px at 18% 18%, rgba(255,179,211,.22) 0%, rgba(255,255,255,0) 60%),
-        radial-gradient(1000px 800px at 82% 85%, rgba(255,111,179,.14) 0%, rgba(255,255,255,0) 62%),
+        radial-gradient(1100px 900px at 18% 18%, rgba(255,179,211,.14) 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(1000px 800px at 82% 85%, rgba(255,111,179,.10) 0%, rgba(255,255,255,0) 62%),
         linear-gradient(180deg, var(--bg1), var(--bg2));
       overflow:hidden;
       touch-action: manipulation;
@@ -47,16 +48,16 @@
       align-items:center;
       justify-content:space-between;
       padding:0 clamp(14px, 2vw, 22px);
-      background: linear-gradient(90deg, rgba(255,111,179,.12), rgba(255,255,255,.78));
+      background: linear-gradient(90deg, rgba(255,111,179,.10), rgba(255,255,255,.92));
       border-bottom:1px solid var(--stroke);
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(14px);
       flex:0 0 auto;
     }
     .brand{display:flex; align-items:center; gap:12px;}
     .logo{
       width:16px; height:16px; border-radius:6px;
       background: radial-gradient(circle at 30% 30%, #fff 0%, #ffd2e8 42%, var(--pri) 100%);
-      box-shadow: 0 0 0 10px rgba(255,111,179,.10);
+      box-shadow: 0 0 0 10px rgba(255,111,179,.08);
       transform: rotate(10deg);
     }
     .brandText b{display:block; font-size:18px; letter-spacing:-.4px; line-height:1; font-weight:1000;}
@@ -68,12 +69,16 @@
     .dot{
       width:8px; height:8px; border-radius:999px;
       background: rgba(255,111,179,.92);
-      box-shadow: 0 0 0 7px rgba(255,111,179,.12);
+      box-shadow: 0 0 0 7px rgba(255,111,179,.10);
     }
 
     .main{flex:1; min-height:0;}
     .screen{display:none; height:100%; padding:clamp(12px, 1.8vw, 18px);}
-    .screen.active{display:block;}
+    .screen.active{display:block; animation: screenIn .28s ease;}
+    @keyframes screenIn{
+      from{opacity:0; transform:translateY(10px);}
+      to{opacity:1; transform:translateY(0);}
+    }
     .panel{
       height:100%;
       background: var(--card);
@@ -92,17 +97,17 @@
       font-size:16px;
       letter-spacing:-.2px;
       user-select:none;
-      transition: transform .08s ease, filter .16s ease;
+      transition: transform .12s ease, filter .16s ease, box-shadow .16s ease;
       min-height: 52px;
     }
     .cta.primary{
       background: linear-gradient(180deg, rgba(255,179,211,.98), rgba(255,111,179,.98));
       color:#fff;
-      box-shadow: 0 14px 34px rgba(255,111,179,.16);
+      box-shadow: 0 14px 34px rgba(255,111,179,.14);
     }
     .cta.ghost{
-      background: rgba(255,255,255,.92);
-      border:1px solid rgba(255,111,179,.22);
+      background: rgba(255,255,255,.96);
+      border:1px solid rgba(255,111,179,.20);
       color:var(--text);
       box-shadow: var(--shadow2);
     }
@@ -112,13 +117,14 @@
       color:var(--text);
       box-shadow: var(--shadow2);
     }
+    .cta:hover{transform:translateY(-1px);}
     .cta:active{transform: translateY(1px) scale(.99);}
     .cta:disabled{opacity:.55; cursor:not-allowed; filter: grayscale(.12);}
 
     .navBar{
       position:absolute; left:0; right:0; bottom:0;
       display:flex; gap:10px; padding:12px;
-      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.90));
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.94));
       border-top: 1px solid var(--stroke);
       backdrop-filter: blur(10px);
       align-items:center;
@@ -130,7 +136,7 @@
       padding: 10px 10px;
       border-radius: 999px;
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.82);
+      background: rgba(255,255,255,.88);
       box-shadow: var(--shadow2);
     }
     .stepDot{
@@ -157,8 +163,8 @@
     .bubble{
       position:absolute;
       width:240px; height:240px; border-radius:999px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85) 0%, rgba(255,179,211,.33) 45%, rgba(255,111,179,.16) 100%);
-      box-shadow: 0 18px 60px rgba(255,111,179,.08);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.90) 0%, rgba(255,179,211,.26) 45%, rgba(255,111,179,.10) 100%);
+      box-shadow: 0 18px 60px rgba(255,111,179,.06);
       animation: float 7.2s ease-in-out infinite;
     }
     .bubble.b2{width: 280px; height:280px; animation-duration: 8.6s; opacity:.72;}
@@ -172,7 +178,7 @@
       width: min(720px, 94vw);
       border-radius: var(--r24);
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.86);
+      background: rgba(255,255,255,.92);
       box-shadow: var(--shadow2);
       padding: 22px 18px;
       text-align:center;
@@ -199,7 +205,7 @@
       display:inline-flex; gap:10px; align-items:center;
       padding:10px 12px;
       border-radius:999px;
-      background: rgba(255,111,179,.10);
+      background: rgba(255,111,179,.08);
       border:1px solid var(--stroke);
       font-weight:1000;
       font-size: 14px;
@@ -231,7 +237,7 @@
     .infoBox{
       width:min(820px, 94vw);
       border-radius:var(--r24);
-      background: rgba(255,255,255,.90);
+      background: rgba(255,255,255,.94);
       border:1px solid var(--stroke);
       box-shadow: var(--shadow2);
       padding: 20px 16px;
@@ -278,7 +284,7 @@
       height:100%;
       box-shadow: var(--shadow2);
     }
-    video{
+    #video{
       width:100%;
       height:100%;
       display:block;
@@ -295,7 +301,7 @@
     .pill{
       padding:10px 12px;
       border-radius:999px;
-      background: rgba(255,255,255,.86);
+      background: rgba(255,255,255,.90);
       border:1px solid var(--stroke);
       color: rgba(43,27,34,.92);
       font-size:14px; font-weight:1000;
@@ -313,7 +319,7 @@
     .count.show{opacity:1; transform: scale(1);}
     .toast{
       position:absolute; left:50%; bottom:18px; transform: translateX(-50%);
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       border:1px solid var(--stroke);
       border-radius:999px;
       padding:12px 14px;
@@ -327,7 +333,7 @@
 
     .sideCol{height:100%; display:flex; flex-direction:column; gap:14px;}
     .cardBox{
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       border:1px solid var(--stroke);
       border-radius: var(--r24);
       padding:14px;
@@ -363,7 +369,7 @@
       border-radius: var(--r24);
       overflow:hidden;
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       box-shadow: var(--shadow2);
       display:flex;
       align-items:center;
@@ -378,7 +384,6 @@
       align-items:center;
       justify-content:center;
     }
-    /* ✅ 프레임 구겨짐 방지: 캔버스는 "높이에 맞춰" 비율 유지 */
     .previewCanvas{
       height: min(100%, 720px);
       width: auto;
@@ -392,7 +397,7 @@
 
     .rightPanel{
       height:100%;
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       border:1px solid var(--stroke);
       border-radius: var(--r24);
       padding: 14px;
@@ -410,7 +415,7 @@
       padding: 12px;
       border-radius: 20px;
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,.82);
+      background: rgba(255,255,255,.88);
       box-shadow: 0 10px 26px rgba(31,15,24,.05);
     }
     .field label{font-weight: 1000; color: rgba(43,27,34,.92); font-size: 13px;}
@@ -418,7 +423,7 @@
       height: 46px;
       border-radius: 14px;
       border: 1px solid rgba(255,111,179,.22);
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       padding: 0 12px;
       font-weight: 1000;
       font-size: 15px;
@@ -429,7 +434,7 @@
     .frameGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
     .frameBtn{
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       border-radius: 18px;
       overflow:hidden;
       cursor:pointer;
@@ -461,7 +466,7 @@
     .filterGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
     .filterBtn{
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.92);
+      background: rgba(255,255,255,.96);
       border-radius: 18px;
       padding: 12px 12px;
       cursor:pointer;
@@ -475,6 +480,47 @@
     .filterBtn .tag{padding: 6px 8px; border-radius: 999px; background: rgba(255,111,179,.10); border: 1px solid rgba(255,111,179,.20); font-size: 11px;}
     .filterBtn.active{border-color: rgba(255,111,179,.45); box-shadow: 0 16px 40px rgba(255,111,179,.10);}
 
+    .qrCanvas{
+      width:220px;
+      height:220px;
+      max-width:100%;
+      align-self:center;
+      background:#fff;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow2);
+      padding:10px;
+    }
+    .memoryVideo{
+      width:100%;
+      max-height:260px;
+      border-radius:16px;
+      border:1px solid var(--stroke);
+      background:#000;
+      object-fit:contain;
+      transform:none;
+      filter:none;
+      box-shadow: var(--shadow2);
+    }
+    .shareHint{
+      text-align:center;
+      font-size:12px;
+      color:rgba(123,90,105,.86);
+      font-weight:900;
+      line-height:1.45;
+    }
+    .linkBox{
+      width:100%;
+      word-break:break-all;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.92);
+      font-size:12px;
+      color:rgba(43,27,34,.85);
+      display:none;
+    }
+
     /* Modal */
     .modal{
       position:fixed; inset:0;
@@ -487,7 +533,7 @@
     .modal.show{display:grid;}
     .modalCard{
       width: min(820px, 96vw);
-      background: rgba(255,255,255,.94);
+      background: rgba(255,255,255,.96);
       border: 1px solid var(--stroke);
       border-radius: var(--r24);
       box-shadow: var(--shadow);
@@ -780,8 +826,23 @@
               <div class="field">
                 <label>저장</label>
                 <button class="cta primary" id="btnSave" type="button" style="width:100%;">PNG 저장</button>
-                <button class="cta danger" id="btnHome" type="button" style="width:100%; margin-top:10px;">처음으로</button>
-                <div class="help" style="margin-top:10px;">저장이 되지 않으면 관리자에게 문의하세요.</div>
+                <button class="cta ghost" id="btnSaveVideo" type="button" style="width:100%;">영상 저장</button>
+                <button class="cta primary" id="btnMakeQR" type="button" style="width:100%;">QR 생성</button>
+                <button class="cta danger" id="btnHome" type="button" style="width:100%;">처음으로</button>
+                <div class="help" style="margin-top:4px;">QR 생성 시 사진과 영상이 함께 공유됩니다.</div>
+              </div>
+
+              <div class="field">
+                <label>추억 영상</label>
+                <video id="memoryVideo" class="memoryVideo" playsinline controls muted></video>
+                <div class="shareHint">촬영 전체 구간이 짧은 영상으로 저장됩니다.</div>
+              </div>
+
+              <div class="field">
+                <label>QR 공유</label>
+                <canvas id="qrCanvas" class="qrCanvas" width="220" height="220"></canvas>
+                <div class="shareHint">휴대폰으로 QR을 스캔하면 사진과 영상을 함께 볼 수 있습니다.</div>
+                <div class="linkBox" id="shareLinkBox"></div>
               </div>
             </div>
           </div>
@@ -870,9 +931,7 @@
     modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
 
     // =========================
-    // ✅ TTS: "한 문장씩" 끝까지 읽고 다음 문장 (안내용)
-    // - 안내에서는 speakLineAwait를 사용 (절대 끊김 X)
-    // - 카운트다운/찰칵은 speakNow만 사용 (짧게)
+    // TTS
     // =========================
     let ttsEnabled = true;
 
@@ -889,7 +948,6 @@
       try{ window.speechSynthesis.cancel(); }catch(e){}
     }
 
-    // ✅ 안내용: 문장 1개 끝날 때까지 기다림
     function speakLineAwait(text){
       if(!ttsEnabled) return Promise.resolve();
       if(!('speechSynthesis' in window)) return Promise.resolve();
@@ -902,7 +960,6 @@
       });
     }
 
-    // ✅ 즉시 말하기(짧은 카운트/알림)
     function speakNow(text){
       if(!ttsEnabled) return;
       if(!('speechSynthesis' in window)) return;
@@ -946,6 +1003,8 @@
     const btnDone = document.getElementById('btnDone');
 
     const btnSave = document.getElementById('btnSave');
+    const btnSaveVideo = document.getElementById('btnSaveVideo');
+    const btnMakeQR = document.getElementById('btnMakeQR');
     const btnHome = document.getElementById('btnHome');
 
     const thumbs = [...document.querySelectorAll('.thumb')];
@@ -967,14 +1026,15 @@
       document.getElementById('previewCanvas4'),
     ];
     const exportCanvas = document.getElementById('exportCanvas');
+    const memoryVideo = document.getElementById('memoryVideo');
+    const qrCanvas = document.getElementById('qrCanvas');
+    const shareLinkBox = document.getElementById('shareLinkBox');
 
     // =========================
     // 상태
     // =========================
     const INTERVAL_SEC = 10;
     const TOTAL_SHOTS = 4;
-
-    // ✅ 촬영 안내 시간 늘림(초)
     const INFO_SECONDS = 22;
 
     const INFO_TTS_LINES = [
@@ -984,10 +1044,16 @@
     ];
 
     let stream = null;
-    let shots = Array(TOTAL_SHOTS).fill(null);      // dataURL
-    let shotImgs = Array(TOTAL_SHOTS).fill(null);   // Image()
+    let shots = Array(TOTAL_SHOTS).fill(null);
+    let shotImgs = Array(TOTAL_SHOTS).fill(null);
     let running = false;
     let aborter = null;
+
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
+    let recordedVideoUrl = '';
+    let latestShareUrl = '';
 
     // =========================
     // 유틸
@@ -1018,6 +1084,22 @@
       btnRetake.disabled = true;
       btnShootNext.disabled = true;
       refreshAllPreviews();
+    }
+
+    function resetRecordingUI(){
+      recordedChunks = [];
+      recordedBlob = null;
+      latestShareUrl = '';
+      shareLinkBox.style.display = 'none';
+      shareLinkBox.textContent = '';
+      const qctx = qrCanvas.getContext('2d');
+      qctx.clearRect(0,0,qrCanvas.width,qrCanvas.height);
+      if(recordedVideoUrl){
+        URL.revokeObjectURL(recordedVideoUrl);
+        recordedVideoUrl = '';
+      }
+      memoryVideo.removeAttribute('src');
+      memoryVideo.load();
     }
 
     // =========================
@@ -1067,7 +1149,7 @@
     ];
     let selectedFrame = FRAMES[0];
     const frameOK = new Map();
-    const frameCache = new Map(); // file -> Image()
+    const frameCache = new Map();
 
     function loadImage(src){
       return new Promise((resolve, reject) => {
@@ -1078,7 +1160,6 @@
       });
     }
 
-    // 슬롯 위치(퍼센트)
     const SLOT_PERCENT = {
       t1: [
         {x:0.05, y:0.23, w:0.44, h:0.22},
@@ -1184,7 +1265,6 @@
       textSize.disabled = !textEnabled;
       textPos.disabled = !textEnabled;
 
-      // 버튼 시각 상태(최소 변경)
       btnTextOn.style.borderColor = textEnabled ? 'rgba(255,111,179,.45)' : 'rgba(255,111,179,.22)';
       btnTextOff.style.borderColor = !textEnabled ? 'rgba(255,111,179,.45)' : 'rgba(255,111,179,.22)';
 
@@ -1196,8 +1276,7 @@
     [textInput, textSize, textPos].forEach(el => el.addEventListener('input', refreshAllPreviews));
 
     // =========================
-    // ✅ 캔버스 합성
-    // - 사진이 남색 박스에 딱 맞도록 inset 최소화
+    // 캔버스 합성
     // =========================
     function drawCover(ctx, img, dx, dy, dw, dh){
       const iw = img.width, ih = img.height;
@@ -1247,10 +1326,8 @@
       ctx.fillStyle = '#fff';
       ctx.fillRect(0,0,baseW,baseH);
 
-      // 1) 템플릿 먼저 그림
       if(frameImg) ctx.drawImage(frameImg, 0, 0);
 
-      // 2) 슬롯 내부에 사진(위에) — 남색 박스에 "딱" 맞추기
       const rectsP = SLOT_PERCENT[selectedFrame.id] || SLOT_PERCENT.t1;
       const rects = rectsP.map(r => ({
         x: Math.round(r.x * baseW),
@@ -1260,8 +1337,6 @@
       }));
 
       const hasAll = shotImgs.every(Boolean);
-
-      // ✅ inset 줄임(기존 0.6% -> 0.18% 수준): 박스에 더 꽉 차게
       const inset = Math.max(2, Math.round(baseW * 0.0018));
 
       if(hasAll){
@@ -1282,7 +1357,6 @@
         }
         ctx.filter = 'none';
       }else{
-        // 촬영 전/미완료: 자리 표시
         ctx.fillStyle = 'rgba(31,15,24,.08)';
         rects.forEach((r, i)=>{
           ctx.fillRect(r.x+inset, r.y+inset, r.w-inset*2, r.h-inset*2);
@@ -1294,7 +1368,6 @@
         });
       }
 
-      // 3) 문구(선택)
       if(textEnabled){
         const txt = (textInput.value || '오늘 네컷 · O.cut').trim();
         const fontPx = Math.max(14, Math.min(52, Number(textSize.value) || 22));
@@ -1356,7 +1429,7 @@
     async function openCamera(){
       const constraints = {
         video: { facingMode:"user", width:{ideal:1920}, height:{ideal:1080} },
-        audio: false
+        audio: true
       };
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
@@ -1370,6 +1443,51 @@
         stream = null;
       }
       video.srcObject = null;
+    }
+
+    // =========================
+    // 영상 녹화
+    // =========================
+    function startVideoRecording(){
+      if(!stream) return;
+      recordedChunks = [];
+      recordedBlob = null;
+
+      const mimeCandidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        ''
+      ];
+      const mimeType = mimeCandidates.find(v => !v || MediaRecorder.isTypeSupported(v)) || '';
+
+      try{
+        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      }catch(e){
+        mediaRecorder = new MediaRecorder(stream);
+      }
+
+      mediaRecorder.ondataavailable = (e)=>{
+        if(e.data && e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = ()=>{
+        if(!recordedChunks.length) return;
+        recordedBlob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+        if(recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+        recordedVideoUrl = URL.createObjectURL(recordedBlob);
+        memoryVideo.src = recordedVideoUrl;
+      };
+
+      mediaRecorder.start(1000);
+    }
+
+    function stopVideoRecording(){
+      try{
+        if(mediaRecorder && mediaRecorder.state !== 'inactive'){
+          mediaRecorder.stop();
+        }
+      }catch(e){}
     }
 
     // =========================
@@ -1399,7 +1517,7 @@
         [{ transform:'scale(1)' }, { transform:'scale(1.012)' }, { transform:'scale(1)' }],
         { duration: 220, easing:'ease-out' }
       );
-      clickBeep(); // ✅ 이 소리가 "찰칵"과 함께 촬영 타이밍
+      clickBeep();
     }
 
     // =========================
@@ -1460,6 +1578,7 @@
       const signal = aborter.signal;
 
       try{
+        startVideoRecording();
         speakNow('촬영을 시작합니다.');
         for(let i=0;i<TOTAL_SHOTS;i++){
           if(signal.aborted) throw new Error('aborted');
@@ -1467,16 +1586,12 @@
           pillStep.textContent = `촬영 ${i+1} / ${TOTAL_SHOTS}`;
           toast(`${i+1}번째 촬영 준비`, 700);
 
-          // ✅ 촬영 중 안내는 화면만(말이 카운트다운에 끊기지 않게)
-          // (원하면 여기서 한 문장만 speakNow로 짧게 추가 가능)
-
           for(let t=INTERVAL_SEC; t>=1; t--){
             if(signal.aborted) throw new Error('aborted');
             pillMsg.textContent = `${t}초 뒤 촬영`;
             setCountdownText(t);
             setCountdownVisible(true);
 
-            // ✅ 3,2,1만 TTS (빠르고 정확하게)
             if(t === 3) speakNow('3');
             if(t === 2) speakNow('2');
             if(t === 1) speakNow('1');
@@ -1488,14 +1603,12 @@
           pillMsg.textContent = '찰칵!';
           toast('찰칵!', 650);
 
-          // ✅ "찰칵 소리(비프)+플래시+캡처"를 한 타이밍에
           shutterFX();
           const d = captureFrameRaw();
           shots[i] = d;
           shotImgs[i] = await dataUrlToImage(d);
           setThumb(i);
 
-          // ✅ 찰칵 TTS는 캡처 직후(타이밍 어긋남 최소화)
           speakNow('찰칵');
 
           await sleep(260);
@@ -1505,10 +1618,13 @@
         toast('촬영 완료', 900);
         speakNow('촬영이 완료되었습니다.');
 
+        stopVideoRecording();
+
         btnRetake.disabled = false;
         btnShootNext.disabled = false;
         refreshAllPreviews();
       } catch(e){
+        stopVideoRecording();
         if(String(e && e.message) !== 'aborted'){
           openModal('촬영 오류', '촬영 중 문제가 발생했습니다. 관리자에게 문의하세요.', e && e.message ? e.message : e);
         }
@@ -1521,11 +1637,12 @@
       if(aborter) aborter.abort();
       aborter = null;
       running = false;
+      stopVideoRecording();
       clearSpeech();
     }
 
     // =========================
-    // 안내 화면(시간 늘림 + 한 문장씩)
+    // 안내 화면
     // =========================
     let infoSkip = false;
 
@@ -1540,20 +1657,16 @@
       infoSkip = false;
       show('info');
 
-      // ✅ 안내 시작 시 기존 발화 정리
       clearSpeech();
 
-      // ✅ 한 문장씩 끝까지 읽고 다음 문장
       if(ttsEnabled && ('speechSynthesis' in window)){
         for(const line of INFO_TTS_LINES){
           if(infoSkip) break;
           await speakLineAwait(line);
-          // 문장 사이 텀(자연스럽게)
           await sleep(250);
         }
       }
 
-      // ✅ 안내 시간 충분히 길게
       for(let t=INFO_SECONDS; t>=1; t--){
         if(infoSkip) break;
         infoTimerEl.textContent = String(t);
@@ -1616,6 +1729,116 @@
       speakNow('저장되었습니다.');
     }
 
+    async function saveVideoFile(){
+      if(!recordedBlob){
+        openModal('저장 불가', '저장할 영상이 없습니다. 먼저 촬영을 완료하세요.', '');
+        return;
+      }
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(recordedBlob);
+      a.href = url;
+      a.download = `오늘네컷_Ocut_video_${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      speakNow('영상이 저장되었습니다.');
+    }
+
+    // =========================
+    // QR 공유
+    // =========================
+    async function upload(file){
+      const fd = new FormData();
+      fd.append('reqtype','fileupload');
+      fd.append('fileToUpload',file);
+
+      const res = await fetch('https://catbox.moe/user/api.php', {
+        method:'POST',
+        body:fd
+      });
+
+      const text = (await res.text()).trim();
+      if(!/^https?:\/\//.test(text)){
+        throw new Error(text || '업로드 실패');
+      }
+      return text;
+    }
+
+    async function makeQRShare(){
+      if(!shotImgs.every(Boolean)){
+        openModal('QR 생성 불가', '먼저 촬영을 완료하세요.', '');
+        return;
+      }
+      if(!recordedBlob){
+        openModal('QR 생성 불가', '공유할 영상이 없습니다. 촬영을 다시 진행하세요.', '');
+        return;
+      }
+
+      try{
+        toast('업로드 중...', 1600);
+
+        await renderComposite(exportCanvas);
+        const photoBlob = await new Promise(res => exportCanvas.toBlob(res, 'image/png'));
+        if(!photoBlob) throw new Error('사진 생성 실패');
+
+        const photoFile = new File([photoBlob], `ocut_${Date.now()}.png`, { type:'image/png' });
+        const videoFile = new File([recordedBlob], `ocut_${Date.now()}.webm`, { type:recordedBlob.type || 'video/webm' });
+
+        const photoUrl = await upload(photoFile);
+        const videoUrl = await upload(videoFile);
+
+        const shareHtml = `<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>O.cut 추억</title>
+<style>
+body{margin:0;padding:24px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;background:linear-gradient(180deg,#fff,#fff7fb);color:#2b1b22;text-align:center}
+.wrap{max-width:720px;margin:0 auto}
+.card{background:#fff;border:1px solid rgba(255,160,200,.28);border-radius:24px;box-shadow:0 18px 60px rgba(31,15,24,.08);padding:18px}
+h1{margin:0 0 16px;font-size:28px}
+img,video{width:100%;max-width:460px;border-radius:18px;display:block;margin:0 auto 16px}
+a.btn{display:inline-block;margin-top:8px;padding:12px 16px;border-radius:14px;background:linear-gradient(180deg,#ffb3d3,#ff6fb3);color:#fff;text-decoration:none;font-weight:900}
+.muted{font-size:13px;color:#7b5a69;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>O.cut</h1>
+<img src="${photoUrl}" alt="오늘 네컷">
+<video src="${videoUrl}" controls playsinline></video>
+<div class="muted">사진과 영상을 함께 저장할 수 있습니다.</div>
+<p><a class="btn" href="${photoUrl}" download>사진 열기</a></p>
+<p><a class="btn" href="${videoUrl}" download>영상 열기</a></p>
+</div>
+</div>
+</body>
+</html>`;
+
+        const shareBlob = new Blob([shareHtml], { type:'text/html' });
+        const shareFile = new File([shareBlob], `ocut_share_${Date.now()}.html`, { type:'text/html' });
+        latestShareUrl = await upload(shareFile);
+
+        qrCanvas.getContext('2d').clearRect(0,0,qrCanvas.width,qrCanvas.height);
+        await QRCode.toCanvas(qrCanvas, latestShareUrl, {
+          width: 200,
+          margin: 1,
+          color: { dark:'#111111', light:'#ffffff' }
+        });
+
+        shareLinkBox.style.display = 'block';
+        shareLinkBox.textContent = latestShareUrl;
+
+        toast('QR 생성 완료', 1200);
+        speakNow('큐알 코드가 생성되었습니다.');
+      }catch(e){
+        openModal('QR 생성 오류', '사진과 영상 공유 링크 생성에 실패했습니다. 관리자에게 문의하세요.', e && e.message ? e.message : e);
+      }
+    }
+
     // =========================
     // 흐름
     // =========================
@@ -1623,16 +1846,15 @@
       cancelShoot();
       closeCamera();
       resetShots();
+      resetRecordingUI();
       show('start');
     }
 
     async function startFlow(){
       resetShots();
+      resetRecordingUI();
       applyCSSFilter();
-
-      // ✅ 문구 기본 OFF
       setTextEnabled(false);
-
       refreshAllPreviews();
       await showInfoThenShoot();
     }
@@ -1653,10 +1875,16 @@
 
     // Shoot controls
     btnCancel.addEventListener('click', ()=>{ cancelShoot(); closeCamera(); show('start'); });
-    btnRetake.addEventListener('click', ()=>{
+    btnRetake.addEventListener('click', async ()=>{
       cancelShoot();
       resetShots();
+      resetRecordingUI();
       speakNow('다시 촬영을 시작합니다.');
+      try{
+        if(!stream){
+          await openCamera();
+        }
+      }catch(e){}
       runShoot();
     });
     btnShootHome.addEventListener('click', goHome);
@@ -1683,6 +1911,8 @@
     btnDone.addEventListener('click', goHome);
 
     btnSave.addEventListener('click', exportPNG);
+    btnSaveVideo.addEventListener('click', saveVideoFile);
+    btnMakeQR.addEventListener('click', makeQRShare);
     btnHome.addEventListener('click', goHome);
 
     // =========================
@@ -1690,14 +1920,12 @@
     // =========================
     (async function init(){
       resetShots();
+      resetRecordingUI();
       textInput.value = '오늘 네컷 · O.cut';
       applyCSSFilter();
       renderFilterButtons();
       await checkFramesAndRender();
-
-      // ✅ 문구 기본 OFF
       setTextEnabled(false);
-
       refreshAllPreviews();
       show('start');
     })();
