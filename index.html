@@ -1947,6 +1947,10 @@
       codeInput.type = "hidden";
       codeInput.name = "code";
 
+      const ocutCodeInput = document.createElement("input");
+      ocutCodeInput.type = "hidden";
+      ocutCodeInput.name = "ocutCode";
+
       const imageInput = document.createElement("input");
       imageInput.type = "hidden";
       imageInput.name = "imageBase64";
@@ -1957,6 +1961,7 @@
       mimeInput.value = "image/jpeg";
 
       ocutUploadForm.appendChild(codeInput);
+      ocutUploadForm.appendChild(ocutCodeInput);
       ocutUploadForm.appendChild(imageInput);
       ocutUploadForm.appendChild(mimeInput);
       document.body.appendChild(ocutUploadForm);
@@ -1969,8 +1974,14 @@
       }
 
       ensureOcutUploadForm();
-      ocutUploadForm.action = APPS_SCRIPT_URL;
+
+      // ✅ 핵심 수정:
+      // code를 hidden input뿐 아니라 URL query에도 같이 실어 보냅니다.
+      // Apps Script가 큰 base64 POST를 처리할 때 일부 파라미터를 놓치는 상황을 막기 위한 이중 전달입니다.
+      const joiner = APPS_SCRIPT_URL.includes("?") ? "&" : "?";
+      ocutUploadForm.action = APPS_SCRIPT_URL + joiner + "code=" + encodeURIComponent(code);
       ocutUploadForm.elements.code.value = code;
+      ocutUploadForm.elements.ocutCode.value = code;
       ocutUploadForm.elements.imageBase64.value = imageBase64;
       ocutUploadForm.elements.mimeType.value = "image/jpeg";
       ocutUploadForm.submit();
