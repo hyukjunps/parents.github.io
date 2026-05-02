@@ -897,7 +897,7 @@
 
                 <div id="shareBox" style="display:none; margin-top:14px; text-align:center;">
                   <p style="font-weight:900; color:#475569; font-size:13px; line-height:1.5; margin:0;">
-                    휴대폰에서 다운로드 페이지에 접속한 뒤<br>
+                    휴대폰에서 다운로드 페이지를 연 뒤<br>
                     아래 사진 번호를 입력하세요.
                   </p>
 
@@ -1529,33 +1529,91 @@
     }
 
     // =========================
-    // 촬영 FX/셔터 사운드
+    // 촬영 FX/셔터/카운트다운 사운드
     // =========================
     let audioCtx = null;
-    function clickBeep(){
+
+    function getAudioCtx(){
       try{
         audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
-        const o = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        o.type = 'triangle';
-        o.frequency.value = 880;
-        g.gain.value = 0.0001;
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start();
-        g.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
-        o.stop(audioCtx.currentTime + 0.13);
+        return audioCtx;
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function unlockAudio(){
+      const ctx = getAudioCtx();
+      if(!ctx) return;
+      try{
+        if(ctx.state === 'suspended') await ctx.resume();
       }catch(e){}
     }
+
+    function tone(freq=880, duration=0.12, gain=0.12, type='sine', delay=0){
+      const ctx = getAudioCtx();
+      if(!ctx) return;
+      try{
+        const start = ctx.currentTime + delay;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(gain, start + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(start);
+        o.stop(start + duration + 0.03);
+      }catch(e){}
+    }
+
+    function playReadySound(){
+      tone(523, 0.09, 0.08, 'sine', 0);
+      tone(659, 0.09, 0.08, 'sine', 0.10);
+      tone(784, 0.14, 0.09, 'sine', 0.20);
+    }
+
+    function playTickSound(t){
+      // 3,2,1은 더 또렷하게, 나머지는 작게
+      if(t <= 3){
+        tone(740 + (3 - t) * 80, 0.12, 0.10, 'square');
+      }else{
+        tone(520, 0.055, 0.045, 'triangle');
+      }
+    }
+
+    function playShutterSound(){
+      // 실제 셔터 느낌: 짧은 고음 + 낮은 클릭
+      tone(1180, 0.055, 0.13, 'square', 0);
+      tone(620, 0.075, 0.10, 'triangle', 0.055);
+      tone(1500, 0.035, 0.055, 'sine', 0.115);
+    }
+
+    function playSuccessSound(){
+      tone(660, 0.11, 0.08, 'sine', 0);
+      tone(880, 0.11, 0.08, 'sine', 0.12);
+      tone(1046, 0.18, 0.09, 'sine', 0.24);
+    }
+
+    function clickBeep(){
+      playShutterSound();
+    }
+
     function shutterFX(){
       flashEl.classList.remove('on');
       void flashEl.offsetWidth;
       flashEl.classList.add('on');
       videoWrap.animate(
-        [{ transform:'scale(1)' }, { transform:'scale(1.012)' }, { transform:'scale(1)' }],
-        { duration: 220, easing:'ease-out' }
+        [
+          { transform:'scale(1)', filter:'brightness(1)' },
+          { transform:'scale(1.018)', filter:'brightness(1.18)' },
+          { transform:'scale(1)', filter:'brightness(1)' }
+        ],
+        { duration: 260, easing:'cubic-bezier(.2,.8,.2,1)' }
       );
-      clickBeep(); // ✅ 이 소리가 "찰칵"과 함께 촬영 타이밍
+      clickBeep();
     }
 
     // =========================
@@ -1631,6 +1689,7 @@
             pillMsg.textContent = `${t}초 뒤 촬영`;
             setCountdownText(t);
             setCountdownVisible(true);
+            playTickSound(t);
 
             // ✅ 3,2,1만 TTS (빠르고 정확하게)
             if(t === 3) speakNow('3');
@@ -1659,6 +1718,7 @@
 
         pillMsg.textContent = '촬영 완료';
         toast('촬영 완료', 900);
+        playSuccessSound();
         speakNow('촬영이 완료되었습니다.');
 
         btnRetake.disabled = false;
@@ -1722,6 +1782,7 @@
       await sleep(250);
 
       show('shoot');
+      playReadySound();
 
       try{
         await openCamera();
@@ -1783,6 +1844,8 @@
     }
 
     async function startFlow(){
+      await unlockAudio();
+      playReadySound();
       resetShots();
       applyCSSFilter();
 
@@ -1843,7 +1906,7 @@
     // =========================
     // ✅ 여기에 Apps Script 웹 앱 URL을 붙여넣으세요.
     // 예: const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec";
-    const APPS_SCRIPT_URL = "여기에_Apps_Script_웹앱_URL";
+    const APPS_SCRIPT_URL = "여기에_Apps_Script_웹앱_URL"; // ← Apps Script 배포 후 받은 /exec 주소로 반드시 교체
 
     let ocutUploadFrame = null;
     let ocutUploadForm = null;
@@ -1888,7 +1951,7 @@
       ensureOcutUploadForm();
 
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('여기에_')){
-        return Promise.reject(new Error('Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.'));
+        return Promise.reject(new Error('Apps Script 웹 앱 URL이 아직 설정되지 않았습니다. O.cut 코드 맨 아래의 APPS_SCRIPT_URL에 배포된 웹 앱 주소를 넣어 주세요.'));
       }
 
       return new Promise((resolve, reject) => {
