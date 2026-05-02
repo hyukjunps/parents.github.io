@@ -1903,17 +1903,14 @@
     // ✅ Apps Script 웹 앱 URL
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec";
 
-    let ocutUploadFrame = null;
-    let ocutUploadForm = null;
-
     function makeOcutPhotoCode(){
       return String(Math.floor(100000 + Math.random() * 900000));
     }
 
     // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
-    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.82) {
-      const maxW = 1200;
-      const maxH = 1800;
+    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.78) {
+      const maxW = 1050;
+      const maxH = 1600;
       const scale = Math.min(1, maxW / canvas.width, maxH / canvas.height);
 
       const out = document.createElement("canvas");
@@ -1930,60 +1927,29 @@
         .replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
     }
 
-    function ensureOcutUploadForm(){
-      if(ocutUploadFrame && ocutUploadForm) return;
-
-      ocutUploadFrame = document.createElement("iframe");
-      ocutUploadFrame.name = "ocutAppsScriptUploadFrame";
-      ocutUploadFrame.style.display = "none";
-      document.body.appendChild(ocutUploadFrame);
-
-      ocutUploadForm = document.createElement("form");
-      ocutUploadForm.method = "POST";
-      ocutUploadForm.target = "ocutAppsScriptUploadFrame";
-      ocutUploadForm.style.display = "none";
-
-      const codeInput = document.createElement("input");
-      codeInput.type = "hidden";
-      codeInput.name = "code";
-
-      const ocutCodeInput = document.createElement("input");
-      ocutCodeInput.type = "hidden";
-      ocutCodeInput.name = "ocutCode";
-
-      const imageInput = document.createElement("input");
-      imageInput.type = "hidden";
-      imageInput.name = "imageBase64";
-
-      const mimeInput = document.createElement("input");
-      mimeInput.type = "hidden";
-      mimeInput.name = "mimeType";
-      mimeInput.value = "image/jpeg";
-
-      ocutUploadForm.appendChild(codeInput);
-      ocutUploadForm.appendChild(ocutCodeInput);
-      ocutUploadForm.appendChild(imageInput);
-      ocutUploadForm.appendChild(mimeInput);
-      document.body.appendChild(ocutUploadForm);
-    }
-
-    // ✅ 응답을 기다리지 않음: Drive 업로드는 iframe으로 보내고, O.cut은 즉시 번호를 표시
-    function submitToAppsScriptNoWait(imageBase64, code){
+    // ✅ 최종 안정화 방식:
+    // code와 imageBase64를 따로 form parameter로 보내지 않고,
+    // 한 JSON 본문 안에 같이 넣어서 Apps Script가 같은 code를 그대로 저장하게 함.
+    async function submitToAppsScriptJsonNoCors(imageBase64, code){
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
         throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
       }
 
-      ensureOcutUploadForm();
-      const safeCode = encodeURIComponent(code);
-      const separator = APPS_SCRIPT_URL.includes("?") ? "&" : "?";
-      ocutUploadForm.action = `${APPS_SCRIPT_URL}${separator}ocutCode=${safeCode}&code=${safeCode}`;
-      ocutUploadForm.elements.code.value = code;
-      if(ocutUploadForm.elements.ocutCode){
-        ocutUploadForm.elements.ocutCode.value = code;
-      }
-      ocutUploadForm.elements.imageBase64.value = imageBase64;
-      ocutUploadForm.elements.mimeType.value = "image/jpeg";
-      ocutUploadForm.submit();
+      const payload = {
+        code,
+        ocutCode: code,
+        mimeType: "image/jpeg",
+        imageBase64
+      };
+
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
     }
 
     async function uploadToGoogleDriveWithCode(){
@@ -1994,10 +1960,11 @@
         // 최종 합성 이미지를 exportCanvas에 렌더링
         await renderComposite(exportCanvas);
 
-        // O.cut에서 번호를 먼저 생성하고, Apps Script에 같은 번호를 같이 보냄
+        // O.cut에서 번호를 먼저 생성하고, 같은 JSON 안에 번호+사진을 함께 전송
         const code = makeOcutPhotoCode();
-        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
-        submitToAppsScriptNoWait(imageBase64, code);
+        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.78);
+
+        await submitToAppsScriptJsonNoCors(imageBase64, code);
 
         photoCode.textContent = code;
         phoneDownloadLink.href = APPS_SCRIPT_URL;
