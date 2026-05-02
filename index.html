@@ -1904,18 +1904,32 @@
     // =========================
     // Google Drive / Apps Script 사진 번호 다운로드 연동
     // =========================
-    // ✅ 여기에 Apps Script 웹 앱 URL을 붙여넣으세요.
-    // 예: const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycb.../exec";
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec"; // ← Apps Script 배포 후 받은 /exec 주소로 반드시 교체
+    // ✅ Apps Script 웹 앱 URL
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec";
 
     let ocutUploadFrame = null;
     let ocutUploadForm = null;
-    let ocutUploadResolve = null;
-    let ocutUploadReject = null;
-    let ocutUploadTimer = null;
 
-    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.9) {
-      return canvas
+    function makeOcutPhotoCode(){
+      return String(Math.floor(100000 + Math.random() * 900000));
+    }
+
+    // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
+    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.82) {
+      const maxW = 1200;
+      const maxH = 1800;
+      const scale = Math.min(1, maxW / canvas.width, maxH / canvas.height);
+
+      const out = document.createElement("canvas");
+      out.width = Math.round(canvas.width * scale);
+      out.height = Math.round(canvas.height * scale);
+
+      const ctx = out.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(canvas, 0, 0, out.width, out.height);
+
+      return out
         .toDataURL(type, quality)
         .replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
     }
@@ -1923,106 +1937,80 @@
     function ensureOcutUploadForm(){
       if(ocutUploadFrame && ocutUploadForm) return;
 
-      ocutUploadFrame = document.createElement('iframe');
-      ocutUploadFrame.name = 'ocutAppsScriptUploadFrame';
-      ocutUploadFrame.style.display = 'none';
+      ocutUploadFrame = document.createElement("iframe");
+      ocutUploadFrame.name = "ocutAppsScriptUploadFrame";
+      ocutUploadFrame.style.display = "none";
       document.body.appendChild(ocutUploadFrame);
 
-      ocutUploadForm = document.createElement('form');
-      ocutUploadForm.method = 'POST';
-      ocutUploadForm.target = 'ocutAppsScriptUploadFrame';
-      ocutUploadForm.style.display = 'none';
+      ocutUploadForm = document.createElement("form");
+      ocutUploadForm.method = "POST";
+      ocutUploadForm.target = "ocutAppsScriptUploadFrame";
+      ocutUploadForm.style.display = "none";
 
-      const imageInput = document.createElement('input');
-      imageInput.type = 'hidden';
-      imageInput.name = 'imageBase64';
+      const codeInput = document.createElement("input");
+      codeInput.type = "hidden";
+      codeInput.name = "code";
 
-      const mimeInput = document.createElement('input');
-      mimeInput.type = 'hidden';
-      mimeInput.name = 'mimeType';
-      mimeInput.value = 'image/jpeg';
+      const imageInput = document.createElement("input");
+      imageInput.type = "hidden";
+      imageInput.name = "imageBase64";
 
+      const mimeInput = document.createElement("input");
+      mimeInput.type = "hidden";
+      mimeInput.name = "mimeType";
+      mimeInput.value = "image/jpeg";
+
+      ocutUploadForm.appendChild(codeInput);
       ocutUploadForm.appendChild(imageInput);
       ocutUploadForm.appendChild(mimeInput);
       document.body.appendChild(ocutUploadForm);
     }
 
-    function postToAppsScript(imageBase64){
+    // ✅ 응답을 기다리지 않음: Drive 업로드는 iframe으로 보내고, O.cut은 즉시 번호를 표시
+    function submitToAppsScriptNoWait(imageBase64, code){
+      if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
+        throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
+      }
+
       ensureOcutUploadForm();
-
-      if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('여기에_')){
-        return Promise.reject(new Error('Apps Script 웹 앱 URL이 아직 설정되지 않았습니다. O.cut 코드 맨 아래의 APPS_SCRIPT_URL에 배포된 웹 앱 주소를 넣어 주세요.'));
-      }
-
-      return new Promise((resolve, reject) => {
-        ocutUploadResolve = resolve;
-        ocutUploadReject = reject;
-
-        clearTimeout(ocutUploadTimer);
-        ocutUploadTimer = setTimeout(() => {
-          ocutUploadResolve = null;
-          ocutUploadReject = null;
-          reject(new Error('업로드 응답 시간이 초과되었습니다. Apps Script 배포 URL과 권한을 확인하세요.'));
-        }, 30000);
-
-        ocutUploadForm.action = APPS_SCRIPT_URL;
-        ocutUploadForm.elements.imageBase64.value = imageBase64;
-        ocutUploadForm.elements.mimeType.value = 'image/jpeg';
-        ocutUploadForm.submit();
-      });
+      ocutUploadForm.action = APPS_SCRIPT_URL;
+      ocutUploadForm.elements.code.value = code;
+      ocutUploadForm.elements.imageBase64.value = imageBase64;
+      ocutUploadForm.elements.mimeType.value = "image/jpeg";
+      ocutUploadForm.submit();
     }
-
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-
-      if(!data || data.source !== 'OCUT_APPS_SCRIPT') return;
-
-      clearTimeout(ocutUploadTimer);
-
-      const payload = data.payload || {};
-      const resolve = ocutUploadResolve;
-      const reject = ocutUploadReject;
-
-      ocutUploadResolve = null;
-      ocutUploadReject = null;
-
-      if(payload.ok){
-        resolve && resolve(payload);
-      }else{
-        reject && reject(new Error(payload.message || '업로드 실패'));
-      }
-    });
 
     async function uploadToGoogleDriveWithCode(){
       try{
         btnPhoneDownload.disabled = true;
-        btnPhoneDownload.textContent = '사진 번호 생성 중...';
+        btnPhoneDownload.textContent = "사진 번호 생성 중...";
 
         // 최종 합성 이미지를 exportCanvas에 렌더링
         await renderComposite(exportCanvas);
 
-        // 무료 저장공간 절약을 위해 JPEG 0.9로 업로드
-        const imageBase64 = canvasToBase64(exportCanvas, 'image/jpeg', 0.9);
-        const result = await postToAppsScript(imageBase64);
+        // O.cut에서 번호를 먼저 생성하고, Apps Script에 같은 번호를 같이 보냄
+        const code = makeOcutPhotoCode();
+        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
+        submitToAppsScriptNoWait(imageBase64, code);
 
-        photoCode.textContent = result.code;
-        phoneDownloadLink.href = result.searchUrl || result.downloadUrl || APPS_SCRIPT_URL;
-        shareBox.style.display = 'block';
+        photoCode.textContent = code;
+        phoneDownloadLink.href = APPS_SCRIPT_URL;
+        shareBox.style.display = "block";
 
-        btnPhoneDownload.textContent = '사진 번호 다시 만들기';
+        btnPhoneDownload.textContent = "사진 번호 다시 만들기";
         btnPhoneDownload.disabled = false;
 
-        speakNow('사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.');
+        speakNow("사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.");
       }catch(err){
         console.error(err);
 
         openModal(
-          '사진 번호 생성 오류',
-          '사진 번호를 만들 수 없습니다. 관리자에게 문의하세요.',
-          err.message || err
+          "사진 번호 생성 오류",
+          err.message || "사진 번호를 만들 수 없습니다.",
+          "O.cut에서 사진 번호를 생성하는 중 문제가 발생했습니다."
         );
 
-        btnPhoneDownload.textContent = '사진 번호 만들기';
+        btnPhoneDownload.textContent = "사진 번호 만들기";
         btnPhoneDownload.disabled = false;
       }
     }
