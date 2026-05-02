@@ -888,16 +888,14 @@
               <p>최종 미리보기 확인 후 저장하세요.</p>
 
               <div class="field">
-                <label>저장</label>
-                <button class="cta primary" id="btnSave" type="button" style="width:100%;">PNG 저장</button>
-
-                <button class="cta ghost" id="btnPhoneDownload" type="button" style="width:100%; margin-top:10px;">
+                <label>휴대폰 다운로드</label>
+                <button class="cta ghost" id="btnPhoneDownload" type="button" style="width:100%;">
                   사진 번호 만들기
                 </button>
 
                 <div id="shareBox" style="display:none; margin-top:14px; text-align:center;">
                   <p style="font-weight:900; color:#475569; font-size:13px; line-height:1.5; margin:0;">
-                    휴대폰에서 다운로드 페이지를 연 뒤<br>
+                    휴대폰에서 O.cut 사진 찾기 페이지를 열고<br>
                     아래 사진 번호를 입력하세요.
                   </p>
 
@@ -916,9 +914,7 @@
                     ------
                   </div>
 
-                  <a id="phoneDownloadLink" class="cta ghost" style="display:inline-flex; text-decoration:none; margin-top:10px;" target="_blank">
-                    다운로드 페이지 열기
-                  </a>
+                  <a id="phoneDownloadLink" style="display:none;" target="_blank" aria-hidden="true"></a>
 
                   <p style="font-weight:900; color:#64748b; font-size:12px; line-height:1.5; margin:10px 0 0;">
                     사진은 약 10분 뒤 만료됩니다.
@@ -926,7 +922,7 @@
                 </div>
 
                 <button class="cta danger" id="btnHome" type="button" style="width:100%; margin-top:10px;">처음으로</button>
-                <div class="help" style="margin-top:10px;">저장이 되지 않으면 관리자에게 문의하세요.</div>
+                <div class="help" style="margin-top:10px;">사진 번호가 생성되면 휴대폰에서 번호를 입력해 다운로드하세요.</div>
               </div>
             </div>
           </div>
@@ -1994,7 +1990,7 @@
         submitToAppsScriptNoWait(imageBase64, code);
 
         photoCode.textContent = code;
-        phoneDownloadLink.href = APPS_SCRIPT_URL;
+        if(phoneDownloadLink) phoneDownloadLink.href = APPS_SCRIPT_URL;
         shareBox.style.display = "block";
 
         btnPhoneDownload.textContent = "사진 번호 다시 만들기";
@@ -2015,7 +2011,7 @@
       }
     }
 
-    btnSave.addEventListener('click', exportPNG);
+    if(btnSave) btnSave.addEventListener('click', exportPNG);
     btnHome.addEventListener('click', goHome);
     btnPhoneDownload.addEventListener('click', uploadToGoogleDriveWithCode);
 
