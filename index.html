@@ -921,7 +921,7 @@
                   </a>
 
                   <p style="font-weight:900; color:#64748b; font-size:12px; line-height:1.5; margin:10px 0 0;">
-                    사진은 약 10분 뒤 만료됩니다.
+                    사진은 약 5분 뒤 만료됩니다.
                   </p>
                 </div>
 
@@ -1910,8 +1910,15 @@
     let ocutUploadFrame = null;
     let ocutUploadForm = null;
 
-    function makeOcutPhotoCode(){
-      return String(Math.floor(100000 + Math.random() * 900000));
+    // ✅ 핵심 수정: 번호를 따로 전달하지 않음.
+    // O.cut과 Apps Script가 같은 imageBase64 문자열로 같은 6자리 번호를 계산한다.
+    // 따라서 Drive 파일명 번호와 O.cut 화면 번호가 달라질 수 없다.
+    function makeCodeFromBase64(imageBase64){
+      let h = imageBase64.length % 900000000;
+      for(let i = 0; i < imageBase64.length; i++){
+        h = (h * 31 + imageBase64.charCodeAt(i)) % 900000000;
+      }
+      return String((h % 900000) + 100000);
     }
 
     // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
@@ -1948,18 +1955,6 @@
       ocutUploadForm.style.display = "none";
       ocutUploadForm.enctype = "application/x-www-form-urlencoded";
 
-      const forcedInput = document.createElement("input");
-      forcedInput.type = "hidden";
-      forcedInput.name = "forcedCode";
-
-      const codeInput = document.createElement("input");
-      codeInput.type = "hidden";
-      codeInput.name = "code";
-
-      const ocutCodeInput = document.createElement("input");
-      ocutCodeInput.type = "hidden";
-      ocutCodeInput.name = "ocutCode";
-
       const imageInput = document.createElement("input");
       imageInput.type = "hidden";
       imageInput.name = "imageBase64";
@@ -1969,26 +1964,19 @@
       mimeInput.name = "mimeType";
       mimeInput.value = "image/jpeg";
 
-      ocutUploadForm.appendChild(forcedInput);
-      ocutUploadForm.appendChild(codeInput);
-      ocutUploadForm.appendChild(ocutCodeInput);
       ocutUploadForm.appendChild(imageInput);
       ocutUploadForm.appendChild(mimeInput);
       document.body.appendChild(ocutUploadForm);
     }
 
-    // ✅ 응답을 기다리지 않음: O.cut 번호를 먼저 보여주고, 같은 번호를 URL query + hidden input으로 이중 전송
-    function submitToAppsScriptNoWait(imageBase64, code){
+    // ✅ 응답을 기다리지 않음. 번호는 imageBase64에서 결정되므로 응답 불필요.
+    function submitToAppsScriptNoWait(imageBase64){
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
         throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
       }
 
       ensureOcutUploadForm();
-      const encodedCode = encodeURIComponent(code);
-      ocutUploadForm.action = `${APPS_SCRIPT_URL}?forcedCode=${encodedCode}&code=${encodedCode}&ocutCode=${encodedCode}&t=${Date.now()}`;
-      ocutUploadForm.elements.forcedCode.value = code;
-      ocutUploadForm.elements.code.value = code;
-      ocutUploadForm.elements.ocutCode.value = code;
+      ocutUploadForm.action = `${APPS_SCRIPT_URL}?t=${Date.now()}`;
       ocutUploadForm.elements.imageBase64.value = imageBase64;
       ocutUploadForm.elements.mimeType.value = "image/jpeg";
       ocutUploadForm.submit();
@@ -2001,14 +1989,16 @@
 
         await renderComposite(exportCanvas);
 
-        const code = makeOcutPhotoCode();
+        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
+        const code = makeCodeFromBase64(imageBase64);
+
+        // 화면에는 서버와 같은 규칙으로 계산된 번호만 표시한다.
         photoCode.textContent = code;
         phoneDownloadLink.href = APPS_SCRIPT_URL;
         shareBox.style.display = "block";
         speakNow("사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.");
 
-        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
-        submitToAppsScriptNoWait(imageBase64, code);
+        submitToAppsScriptNoWait(imageBase64);
 
         btnPhoneDownload.textContent = "사진 번호 다시 만들기";
         btnPhoneDownload.disabled = false;
