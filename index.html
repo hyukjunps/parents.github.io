@@ -888,35 +888,35 @@
               <p>최종 미리보기 확인 후 저장하세요.</p>
 
               <div class="field">
-                <label>사진 번호</label>
-                <button class="cta primary" id="btnSave" type="button" style="display:none;">PNG 저장</button>
-
-                <button class="cta primary" id="btnPhoneDownload" type="button" style="width:100%; margin-top:0;">
+                <label>저장</label>
+                <button class="cta ghost" id="btnPhoneDownload" type="button" style="width:100%; margin-top:10px;">
                   사진 번호 만들기
                 </button>
 
-                <div id="shareBox" style="display:none; margin-top:16px; text-align:center;">
+                <div id="shareBox" style="display:none; margin-top:14px; text-align:center;">
                   <p style="font-weight:900; color:#475569; font-size:13px; line-height:1.5; margin:0;">
-                    휴대폰에서 O.cut 사진 찾기 페이지에 접속한 뒤<br>
-                    아래 6자리 사진 번호를 입력하세요.
+                    휴대폰에서 다운로드 페이지를 연 뒤<br>
+                    아래 사진 번호를 입력하세요.
                   </p>
 
                   <div id="photoCode" style="
-                    margin:12px auto 0;
+                    margin:10px auto 0;
                     display:inline-block;
-                    padding:14px 20px;
-                    border-radius:20px;
+                    padding:12px 18px;
+                    border-radius:18px;
                     background:#eff6ff;
                     border:1px solid #bfdbfe;
                     color:#1d4ed8;
                     font-weight:1000;
-                    font-size:42px;
-                    letter-spacing:5px;
+                    font-size:36px;
+                    letter-spacing:4px;
                   ">
                     ------
                   </div>
 
-                  <p style="font-weight:900; color:#64748b; font-size:12px; line-height:1.5; margin:12px 0 0;">
+                  <a id="phoneDownloadLink" style="display:none;" target="_blank" aria-hidden="true"></a>
+
+                  <p style="font-weight:900; color:#64748b; font-size:12px; line-height:1.5; margin:10px 0 0;">
                     사진은 약 5분 뒤 만료됩니다.
                   </p>
                 </div>
@@ -1165,7 +1165,7 @@
       if(shareBox){
         shareBox.style.display = 'none';
         photoCode.textContent = '------';
-        if(phoneDownloadLink) phoneDownloadLink.removeAttribute('href');
+        phoneDownloadLink.removeAttribute('href');
         btnPhoneDownload.textContent = '사진 번호 만들기';
         btnPhoneDownload.disabled = false;
       }
@@ -1900,6 +1900,7 @@
     // =========================
     // Google Drive / Apps Script 사진 번호 다운로드 연동
     // =========================
+    // ✅ Apps Script 웹 앱 URL
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec";
 
     let ocutUploadFrame = null;
@@ -1909,6 +1910,7 @@
       return String(Math.floor(100000 + Math.random() * 900000));
     }
 
+    // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
     function canvasToBase64(canvas, type = "image/jpeg", quality = 0.82) {
       const maxW = 1200;
       const maxH = 1800;
@@ -1939,7 +1941,6 @@
       ocutUploadForm = document.createElement("form");
       ocutUploadForm.method = "POST";
       ocutUploadForm.target = "ocutAppsScriptUploadFrame";
-      ocutUploadForm.enctype = "application/x-www-form-urlencoded";
       ocutUploadForm.style.display = "none";
 
       const codeInput = document.createElement("input");
@@ -1966,23 +1967,20 @@
       document.body.appendChild(ocutUploadForm);
     }
 
+    // ✅ 응답을 기다리지 않음: Drive 업로드는 iframe으로 보내고, O.cut은 즉시 번호를 표시
     function submitToAppsScriptNoWait(imageBase64, code){
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
         throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
       }
 
       ensureOcutUploadForm();
-
-      // 핵심: 번호를 POST body가 아니라 URL query에도 넣음.
-      // 큰 base64 POST에서 hidden input이 누락되어도 Apps Script가 ocutCode를 확실히 읽을 수 있음.
-      const url = new URL(APPS_SCRIPT_URL);
-      url.searchParams.set("ocutCode", code);
-      url.searchParams.set("code", code);
-      url.searchParams.set("t", String(Date.now()));
-
-      ocutUploadForm.action = url.toString();
+      const safeCode = encodeURIComponent(code);
+      const separator = APPS_SCRIPT_URL.includes("?") ? "&" : "?";
+      ocutUploadForm.action = `${APPS_SCRIPT_URL}${separator}ocutCode=${safeCode}&code=${safeCode}`;
       ocutUploadForm.elements.code.value = code;
-      ocutUploadForm.elements.ocutCode.value = code;
+      if(ocutUploadForm.elements.ocutCode){
+        ocutUploadForm.elements.ocutCode.value = code;
+      }
       ocutUploadForm.elements.imageBase64.value = imageBase64;
       ocutUploadForm.elements.mimeType.value = "image/jpeg";
       ocutUploadForm.submit();
@@ -1993,17 +1991,16 @@
         btnPhoneDownload.disabled = true;
         btnPhoneDownload.textContent = "사진 번호 생성 중...";
 
+        // 최종 합성 이미지를 exportCanvas에 렌더링
         await renderComposite(exportCanvas);
 
+        // O.cut에서 번호를 먼저 생성하고, Apps Script에 같은 번호를 같이 보냄
         const code = makeOcutPhotoCode();
         const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
         submitToAppsScriptNoWait(imageBase64, code);
 
         photoCode.textContent = code;
-        if(phoneDownloadLink){
-          phoneDownloadLink.href = APPS_SCRIPT_URL;
-          phoneDownloadLink.style.display = "none";
-        }
+        phoneDownloadLink.href = APPS_SCRIPT_URL;
         shareBox.style.display = "block";
 
         btnPhoneDownload.textContent = "사진 번호 다시 만들기";
@@ -2012,17 +2009,18 @@
         speakNow("사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.");
       }catch(err){
         console.error(err);
+
         openModal(
           "사진 번호 생성 오류",
           err.message || "사진 번호를 만들 수 없습니다.",
           "O.cut에서 사진 번호를 생성하는 중 문제가 발생했습니다."
         );
+
         btnPhoneDownload.textContent = "사진 번호 만들기";
         btnPhoneDownload.disabled = false;
       }
     }
 
-    if(btnSave) btnSave.addEventListener('click', exportPNG);
     btnHome.addEventListener('click', goHome);
     btnPhoneDownload.addEventListener('click', uploadToGoogleDriveWithCode);
 
