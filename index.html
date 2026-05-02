@@ -1910,18 +1910,14 @@
     let ocutUploadFrame = null;
     let ocutUploadForm = null;
 
-    // ✅ 핵심 수정: 번호를 따로 전달하지 않음.
-    // O.cut과 Apps Script가 같은 imageBase64 문자열로 같은 6자리 번호를 계산한다.
-    // 따라서 Drive 파일명 번호와 O.cut 화면 번호가 달라질 수 없다.
-    function makeCodeFromBase64(imageBase64){
-      let h = imageBase64.length % 900000000;
-      for(let i = 0; i < imageBase64.length; i++){
-        h = (h * 31 + imageBase64.charCodeAt(i)) % 900000000;
-      }
-      return String((h % 900000) + 100000);
+    // ✅ 최종 핵심:
+    // 번호를 별도 input으로 보내지 않고 imageBase64 안에 같이 넣는다.
+    // 즉 사진이 Drive에 저장된다면, 같은 필드 안에 들어 있던 O.cut 번호도 반드시 같이 도착한다.
+    // Apps Script는 이 번호가 없으면 저장 자체를 하지 않는다.
+    function makeOcutPhotoCode(){
+      return String(Math.floor(100000 + Math.random() * 900000));
     }
 
-    // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
     function canvasToBase64(canvas, type = "image/jpeg", quality = 0.82) {
       const maxW = 1200;
       const maxH = 1800;
@@ -1939,6 +1935,10 @@
       return out
         .toDataURL(type, quality)
         .replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+    }
+
+    function packImagePayload(code, imageBase64){
+      return "OCUT_CODE:" + code + ";OCUT_DATA:" + imageBase64;
     }
 
     function ensureOcutUploadForm(){
@@ -1969,15 +1969,14 @@
       document.body.appendChild(ocutUploadForm);
     }
 
-    // ✅ 응답을 기다리지 않음. 번호는 imageBase64에서 결정되므로 응답 불필요.
-    function submitToAppsScriptNoWait(imageBase64){
+    function submitToAppsScriptNoWait(packedPayload){
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
         throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
       }
 
       ensureOcutUploadForm();
-      ocutUploadForm.action = `${APPS_SCRIPT_URL}?t=${Date.now()}`;
-      ocutUploadForm.elements.imageBase64.value = imageBase64;
+      ocutUploadForm.action = APPS_SCRIPT_URL + "?t=" + Date.now();
+      ocutUploadForm.elements.imageBase64.value = packedPayload;
       ocutUploadForm.elements.mimeType.value = "image/jpeg";
       ocutUploadForm.submit();
     }
@@ -1989,16 +1988,21 @@
 
         await renderComposite(exportCanvas);
 
+        const code = makeOcutPhotoCode();
         const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
-        const code = makeCodeFromBase64(imageBase64);
+        const packedPayload = packImagePayload(code, imageBase64);
 
-        // 화면에는 서버와 같은 규칙으로 계산된 번호만 표시한다.
+        // 응답을 기다리지 않고, O.cut이 만든 번호를 즉시 표시한다.
+        // Apps Script는 이 번호가 payload 안에 없으면 저장하지 않는다.
         photoCode.textContent = code;
-        phoneDownloadLink.href = APPS_SCRIPT_URL;
+        if(phoneDownloadLink){
+          phoneDownloadLink.href = APPS_SCRIPT_URL;
+          phoneDownloadLink.style.display = "none";
+        }
         shareBox.style.display = "block";
         speakNow("사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.");
 
-        submitToAppsScriptNoWait(imageBase64);
+        submitToAppsScriptNoWait(packedPayload);
 
         btnPhoneDownload.textContent = "사진 번호 다시 만들기";
         btnPhoneDownload.disabled = false;
@@ -2015,6 +2019,9 @@
         btnPhoneDownload.disabled = false;
       }
     }
+
+    if(btnSave) btnSave.style.display = "none";
+    if(phoneDownloadLink) phoneDownloadLink.style.display = "none";
 
     btnSave.addEventListener('click', exportPNG);
     btnHome.addEventListener('click', goHome);
