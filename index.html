@@ -1920,6 +1920,11 @@
       return String(Math.floor(100000 + Math.random() * 900000));
     }
 
+    function makeUploadToken(){
+      const rand = Math.random().toString(36).slice(2);
+      return `ocut-${Date.now()}-${rand}`;
+    }
+
     // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
     function canvasToBase64(canvas, type = "image/jpeg", quality = 0.82) {
       const maxW = 1200;
@@ -1954,7 +1959,7 @@
       ocutUploadForm.style.display = "none";
       ocutUploadForm.enctype = "application/x-www-form-urlencoded";
 
-      // ✅ 번호와 이미지가 따로 떨어져 전달되지 않도록 payload 하나에 묶어서 전송
+      // ✅ 번호와 이미지를 payload 하나에 묶어서 전송
       ocutPayloadInput = document.createElement("textarea");
       ocutPayloadInput.name = "payload";
       ocutPayloadInput.style.display = "none";
@@ -1970,26 +1975,47 @@
 
       ensureOcutUploadForm();
 
+      const clientToken = makeUploadToken();
+      const finalPayload = {
+        ...payload,
+        clientToken
+      };
+
       return new Promise((resolve, reject) => {
-        let submitted = false;
         let done = false;
 
-        const timer = setTimeout(() => {
-          if(done) return;
-          done = true;
-          reject(new Error("업로드 응답이 늦습니다. 사진 용량을 줄이고 다시 시도해 주세요."));
-        }, 60000);
-
-        ocutUploadFrame.onload = () => {
-          if(!submitted || done) return;
-          done = true;
+        const cleanup = () => {
+          window.removeEventListener("message", onMessage);
           clearTimeout(timer);
-          resolve();
         };
 
-        ocutUploadForm.action = APPS_SCRIPT_URL + "?mode=upload&t=" + Date.now();
-        ocutPayloadInput.value = JSON.stringify(payload);
-        submitted = true;
+        const finish = (fn, value) => {
+          if(done) return;
+          done = true;
+          cleanup();
+          fn(value);
+        };
+
+        const onMessage = (event) => {
+          const data = event.data || {};
+          if(!data || data.type !== "OCUT_UPLOAD_RESULT") return;
+          if(data.clientToken !== clientToken) return;
+
+          if(data.status === "OK" && /^\d{6}$/.test(String(data.code || ""))){
+            finish(resolve, data);
+          }else{
+            finish(reject, new Error(data.message || data.status || "업로드 실패"));
+          }
+        };
+
+        const timer = setTimeout(() => {
+          finish(reject, new Error("업로드 응답이 늦습니다. Apps Script 배포 버전과 Drive 권한을 확인해 주세요."));
+        }, 90000);
+
+        window.addEventListener("message", onMessage);
+
+        ocutUploadForm.action = `${APPS_SCRIPT_URL}?mode=upload&clientToken=${encodeURIComponent(clientToken)}&t=${Date.now()}`;
+        ocutPayloadInput.value = JSON.stringify(finalPayload);
         ocutUploadForm.submit();
       });
     }
@@ -2004,19 +2030,20 @@
         // 최종 합성 이미지를 exportCanvas에 렌더링
         await renderComposite(exportCanvas);
 
-        // ✅ O.cut에서 만든 번호와 이미지를 payload 하나로 묶어서 전송
-        const code = makeOcutPhotoCode();
+        // ✅ 프론트에서 요청 번호를 만들되, 최종 표시는 Apps Script가 실제 저장한 번호만 사용
+        const requestedCode = makeOcutPhotoCode();
         const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.82);
 
-        await submitToAppsScriptPayload({
-          code,
+        const result = await submitToAppsScriptPayload({
+          code: requestedCode,
           mimeType: "image/jpeg",
           imageBase64
         });
 
-        photoCode.textContent = code;
+        const savedCode = String(result.code);
+        photoCode.textContent = savedCode;
         if(phoneDownloadLink){
-          phoneDownloadLink.href = APPS_SCRIPT_URL;
+          phoneDownloadLink.href = `${APPS_SCRIPT_URL}?code=${encodeURIComponent(savedCode)}`;
           phoneDownloadLink.style.display = "none";
         }
 
@@ -2030,7 +2057,7 @@
         openModal(
           "사진 번호 생성 오류",
           err.message || "사진 번호를 만들 수 없습니다.",
-          "Drive 폴더에 사진이 저장되지 않았거나 응답이 지연되었습니다. 다시 시도해 주세요."
+          "Apps Script를 최신 버전으로 다시 배포했는지, Drive 폴더 권한이 있는지 확인해 주세요."
         );
 
         photoCode.textContent = "------";
@@ -2039,6 +2066,7 @@
         btnPhoneDownload.disabled = false;
       }
     }
+
 
     btnSave.addEventListener('click', exportPNG);
     btnHome.addEventListener('click', goHome);
