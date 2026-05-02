@@ -12,7 +12,2139 @@
       --card: rgba(255,255,255,.86);
       --stroke: rgba(59,130,246,.34);
       --text:#0f172a;
+      --muted:#475569;<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>O.cut · 오늘 네컷</title>
+
+  <style>
+    :root{
+      --bg1:#f8fbff;
+      --bg2:#eef6ff;
+      --card: rgba(255,255,255,.86);
+      --stroke: rgba(59,130,246,.34);
+      --text:#0f172a;
       --muted:#475569;
+
+      --pri:#2563eb;
+      --pri2:#60a5fa;
+      --shadow: 0 18px 60px rgba(15,23,42,.12);
+      --shadow2: 0 10px 26px rgba(15,23,42,.08);
+
+      --r24:24px;
+      --r18:18px;
+
+      /* 비디오/썸네일에 적용되는 CSS 필터(프리뷰 느낌용) */
+      --active-filter: none;
+    }
+
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1100px 900px at 18% 18%, rgba(96,165,250,.22) 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(1000px 800px at 82% 85%, rgba(37,99,235,.14) 0%, rgba(255,255,255,0) 62%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow:hidden;
+      touch-action: manipulation;
+    }
+
+    .app{height:100dvh; width:100vw; display:flex; flex-direction:column;}
+    .topbar{
+      height:74px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 clamp(14px, 2vw, 22px);
+      background: linear-gradient(90deg, rgba(37,99,235,.12), rgba(255,255,255,.78));
+      border-bottom:1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      flex:0 0 auto;
+    }
+    .brand{display:flex; align-items:center; gap:12px;}
+    .logo{
+      width:16px; height:16px; border-radius:6px;
+      background: radial-gradient(circle at 30% 30%, #fff 0%, #dbeafe 42%, var(--pri) 100%);
+      box-shadow: 0 0 0 10px rgba(37,99,235,.10);
+      transform: rotate(10deg);
+    }
+    .brandText b{display:block; font-size:18px; letter-spacing:-.4px; line-height:1; font-weight:1000;}
+    .brandText small{display:block; margin-top:4px; font-size:12px; font-weight:950; color:rgba(71,85,105,.85);}
+    .status{
+      display:flex; align-items:center; gap:10px;
+      font-weight:1000; font-size:13px; color:rgba(15,23,42,.82);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(37,99,235,.92);
+      box-shadow: 0 0 0 7px rgba(37,99,235,.12);
+    }
+
+    .main{flex:1; min-height:0;}
+    .screen{display:none; height:100%; padding:clamp(12px, 1.8vw, 18px);}
+    .screen.active{display:block;}
+    .panel{
+      height:100%;
+      background: var(--card);
+      border:1px solid var(--stroke);
+      border-radius: var(--r24);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .cta{
+      border:none; cursor:pointer;
+      border-radius: var(--r18);
+      padding:14px 16px;
+      font-weight:1000;
+      font-size:16px;
+      letter-spacing:-.2px;
+      user-select:none;
+      transition: transform .08s ease, filter .16s ease;
+      min-height: 52px;
+    }
+    .cta.primary{
+      background: linear-gradient(180deg, rgba(96,165,250,.98), rgba(37,99,235,.98));
+      color:#fff;
+      box-shadow: 0 14px 34px rgba(37,99,235,.16);
+    }
+    .cta.ghost{
+      background: rgba(255,255,255,.92);
+      border:1px solid rgba(37,99,235,.22);
+      color:var(--text);
+      box-shadow: var(--shadow2);
+    }
+    .cta.danger{
+      background: rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.18);
+      color:var(--text);
+      box-shadow: var(--shadow2);
+    }
+    .cta:active{transform: translateY(1px) scale(.99);}
+    .cta:disabled{opacity:.55; cursor:not-allowed; filter: grayscale(.12);}
+
+    .navBar{
+      position:absolute; left:0; right:0; bottom:0;
+      display:flex; gap:10px; padding:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.90));
+      border-top: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      align-items:center;
+    }
+    .navBar .cta{flex:1; min-width: 140px;}
+    .stepper{
+      flex: 0 0 auto;
+      display:flex; gap:6px;
+      padding: 10px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow2);
+    }
+    .stepDot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(15,23,42,.10);
+      border: 1px solid rgba(15,23,42,.08);
+    }
+    .stepDot.on{
+      background: rgba(37,99,235,.85);
+      border-color: rgba(37,99,235,.35);
+      box-shadow: 0 0 0 6px rgba(37,99,235,.10);
+    }
+
+    /* START */
+    .startWrap{
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding: 18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .bubbles{position:absolute; inset:-60px; pointer-events:none; opacity:.85;}
+    .bubble{
+      position:absolute;
+      width:240px; height:240px; border-radius:999px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85) 0%, rgba(96,165,250,.33) 45%, rgba(37,99,235,.16) 100%);
+      box-shadow: 0 18px 60px rgba(37,99,235,.08);
+      animation: float 7.2s ease-in-out infinite;
+    }
+    .bubble.b2{width: 280px; height:280px; animation-duration: 8.6s; opacity:.72;}
+    .bubble.b3{width: 190px; height:190px; animation-duration: 7.8s; opacity:.62;}
+    @keyframes float{
+      0%,100%{transform: translateY(0) translateX(0) scale(1);}
+      50%{transform: translateY(-18px) translateX(10px) scale(1.02);}
+    }
+
+    .startCard{
+      width: min(720px, 94vw);
+      border-radius: var(--r24);
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.86);
+      box-shadow: var(--shadow2);
+      padding: 22px 18px;
+      text-align:center;
+      backdrop-filter: blur(10px);
+    }
+    .startTitle{
+      margin:0;
+      font-size: clamp(44px, 6vw, 78px);
+      line-height:1.02;
+      letter-spacing:-2px;
+      font-weight:1000;
+      background: linear-gradient(90deg, rgba(37,99,235,1), rgba(96,165,250,1));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .startSub{
+      margin:10px 0 0;
+      font-weight:1000;
+      font-size: clamp(14px, 2.2vw, 18px);
+      color: rgba(71,85,105,.92);
+      letter-spacing:-.3px;
+    }
+    .startHint{
+      margin:14px auto 0;
+      display:inline-flex; gap:10px; align-items:center;
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(37,99,235,.10);
+      border:1px solid var(--stroke);
+      font-weight:1000;
+      font-size: 14px;
+      color: rgba(15,23,42,.92);
+    }
+    .pulse{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(37,99,235,.95);
+      box-shadow: 0 0 0 0 rgba(37,99,235,.25);
+      animation: pulse 1.3s infinite;
+    }
+    @keyframes pulse{
+      0%{box-shadow: 0 0 0 0 rgba(37,99,235,.28);}
+      70%{box-shadow: 0 0 0 14px rgba(37,99,235,0);}
+      100%{box-shadow: 0 0 0 0 rgba(37,99,235,0);}
+    }
+    .startBtnRow{margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+    .startBtnRow .cta{width:min(260px, 92vw);}
+    .help{
+      margin-top: 10px;
+      color: rgba(71,85,105,.78);
+      font-weight: 900;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    /* INFO */
+    .infoWrap{height:100%; display:grid; place-items:center; padding: 18px;}
+    .infoBox{
+      width:min(820px, 94vw);
+      border-radius:var(--r24);
+      background: rgba(255,255,255,.90);
+      border:1px solid var(--stroke);
+      box-shadow: var(--shadow2);
+      padding: 20px 16px;
+      text-align:center;
+    }
+    .infoBox h2{margin:0; font-size: clamp(22px, 3.5vw, 34px); letter-spacing:-1px; font-weight:1000;}
+    .infoBox p{margin:10px 0 0; color: rgba(71,85,105,.92); font-weight:950; font-size: clamp(14px, 2.2vw, 18px); line-height:1.6;}
+    .infoTimer{margin-top:12px; font-weight:1000; font-size: clamp(46px, 6.6vw, 72px); letter-spacing:-1px;}
+    .infoProgress{
+      margin: 12px auto 0;
+      height: 10px;
+      width: min(560px, 92vw);
+      border-radius: 999px;
+      background: rgba(15,23,42,.08);
+      overflow:hidden;
+      border: 1px solid var(--stroke);
+    }
+    .infoProgress > i{
+      display:block; height:100%; width:0%;
+      background: linear-gradient(90deg, rgba(37,99,235,.92), rgba(96,165,250,.92));
+      border-radius: 999px;
+      transition: width .22s ease;
+    }
+    .infoBtns{margin-top: 12px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;}
+    .infoBtns .cta{width:min(260px, 92vw);}
+
+    /* SHOOT */
+    .shootGrid{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1.55fr .75fr;
+      gap:14px;
+      padding-bottom: 72px;
+    }
+    @media (max-width: 980px){ .shootGrid{grid-template-columns:1fr;} }
+
+    .videoWrap{
+      border-radius: var(--r24);
+      overflow:hidden;
+      border:1px solid var(--stroke);
+      background:#000;
+      position:relative;
+      min-height:0;
+      height:100%;
+      box-shadow: var(--shadow2);
+    }
+    video{
+      width:100%;
+      height:100%;
+      display:block;
+      object-fit:cover;
+      transform: scaleX(-1);
+      filter: var(--active-filter);
+    }
+    .flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:3;}
+    .flash.on{ animation: flash 240ms ease-out; }
+    @keyframes flash{ 0%{opacity:0} 10%{opacity:.95} 100%{opacity:0} }
+
+    .hud{position:absolute; inset:0; pointer-events:none; z-index:4;}
+    .hudTop{position:absolute; left:14px; top:14px; display:flex; gap:10px; flex-wrap:wrap;}
+    .pill{
+      padding:10px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.86);
+      border:1px solid var(--stroke);
+      color: rgba(15,23,42,.92);
+      font-size:14px; font-weight:1000;
+      box-shadow: 0 10px 28px rgba(15,23,42,.06);
+    }
+    .count{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size: clamp(72px, 12vw, 130px);
+      font-weight:1000; color:#fff;
+      text-shadow: 0 12px 80px rgba(0,0,0,.65);
+      opacity:0; transform: scale(.96);
+      transition: opacity .12s ease, transform .12s ease;
+    }
+    .count.show{opacity:1; transform: scale(1);}
+    .toast{
+      position:absolute; left:50%; bottom:18px; transform: translateX(-50%);
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:12px 14px;
+      font-weight:1000;
+      box-shadow: var(--shadow2);
+      opacity:0; pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index:5; font-size: 14px;
+    }
+    .toast.show{opacity:1; transform: translateX(-50%) translateY(-8px);}
+
+    .sideCol{height:100%; display:flex; flex-direction:column; gap:14px;}
+    .cardBox{
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--stroke);
+      border-radius: var(--r24);
+      padding:14px;
+      box-shadow: var(--shadow2);
+    }
+    .cardTitle{font-weight:1000; margin-bottom:10px; font-size:16px; letter-spacing:-.3px;}
+    .thumbGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .thumb{
+      border-radius:16px; overflow:hidden;
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, #fff, #eff6ff);
+      aspect-ratio: 4/3;
+      display:flex; align-items:center; justify-content:center;
+      color: rgba(71,85,105,.85);
+      font-weight:1000;
+      font-size:14px;
+      text-align:center;
+    }
+    .thumb img{width:100%; height:100%; object-fit:cover; display:block; filter: var(--active-filter);}
+
+    /* EDIT screens */
+    .editGrid{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1fr .9fr;
+      gap:14px;
+      padding-bottom: 72px;
+    }
+    @media (max-width: 980px){ .editGrid{grid-template-columns:1fr;} }
+
+    .stage{
+      height:100%;
+      border-radius: var(--r24);
+      overflow:hidden;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.92);
+      box-shadow: var(--shadow2);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 12px;
+      position:relative;
+    }
+    .previewWrap{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    /* ✅ 프레임 구겨짐 방지: 캔버스는 "높이에 맞춰" 비율 유지 */
+    .previewCanvas{
+      height: min(100%, 720px);
+      width: auto;
+      max-width: min(96%, 620px);
+      border-radius: 18px;
+      box-shadow: 0 18px 70px rgba(15,23,42,.10);
+      border: 1px solid var(--stroke);
+      background: #fff;
+      image-rendering: auto;
+    }
+
+    .rightPanel{
+      height:100%;
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--stroke);
+      border-radius: var(--r24);
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      box-shadow: var(--shadow2);
+      overflow:auto;
+    }
+    .rightPanel h2{margin:0; font-weight:1000; letter-spacing:-.5px; font-size:20px;}
+    .rightPanel p{margin:0; color: rgba(71,85,105,.92); font-weight:950; line-height:1.5; font-size:14px;}
+
+    .field{
+      display:flex; flex-direction:column; gap:10px;
+      padding: 12px;
+      border-radius: 20px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 10px 26px rgba(15,23,42,.05);
+    }
+    .field label{font-weight: 1000; color: rgba(15,23,42,.92); font-size: 13px;}
+    .control{
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid rgba(37,99,235,.22);
+      background: rgba(255,255,255,.92);
+      padding: 0 12px;
+      font-weight: 1000;
+      font-size: 15px;
+      outline: none;
+    }
+    .control:focus{box-shadow: 0 0 0 4px rgba(37,99,235,.12);}
+
+    .frameGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .frameBtn{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.92);
+      border-radius: 18px;
+      overflow:hidden;
+      cursor:pointer;
+      box-shadow: 0 12px 30px rgba(15,23,42,.08);
+      transition: transform .08s ease, box-shadow .16s ease, border-color .16s ease;
+      position:relative;
+      display:flex; flex-direction:column;
+    }
+    .frameBtn:active{transform: translateY(1px) scale(.99);}
+    .frameBtn img{width:100%; height: 120px; object-fit:cover; display:block; background: linear-gradient(180deg, #fff, #eff6ff);}
+    .frameBtn .meta{
+      padding: 10px 10px;
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      font-weight:1000; font-size: 13px; color: rgba(15,23,42,.92);
+    }
+    .badge{padding: 6px 8px; border-radius: 999px; background: rgba(37,99,235,.10); border: 1px solid rgba(37,99,235,.20); font-size: 11px; white-space:nowrap;}
+    .frameBtn.active{border-color: rgba(37,99,235,.45); box-shadow: 0 16px 40px rgba(37,99,235,.12);}
+    .frameBtn.disabled{opacity:.55; cursor:not-allowed; filter: grayscale(.15);}
+    .frameBtn.disabled::after{
+      content:"관리자 문의";
+      position:absolute; top: 8px; right: 8px;
+      padding: 6px 8px; border-radius: 999px;
+      background: rgba(15,23,42,.10);
+      border: 1px solid rgba(15,23,42,.14);
+      font-weight: 1000; font-size: 11px;
+      color: rgba(15,23,42,.82);
+    }
+
+    .filterGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .filterBtn{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.92);
+      border-radius: 18px;
+      padding: 12px 12px;
+      cursor:pointer;
+      box-shadow: 0 10px 26px rgba(15,23,42,.05);
+      transition: transform .08s ease, box-shadow .16s ease, border-color .16s ease;
+      min-height: 52px;
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      font-weight:1000; font-size: 14px;
+    }
+    .filterBtn:active{transform: translateY(1px) scale(.99);}
+    .filterBtn .tag{padding: 6px 8px; border-radius: 999px; background: rgba(37,99,235,.10); border: 1px solid rgba(37,99,235,.20); font-size: 11px;}
+    .filterBtn.active{border-color: rgba(37,99,235,.45); box-shadow: 0 16px 40px rgba(37,99,235,.10);}
+
+    /* Modal */
+    .modal{
+      position:fixed; inset:0;
+      display:none; place-items:center;
+      background: rgba(15,23,42,.40);
+      backdrop-filter: blur(10px);
+      z-index: 999;
+      padding: 14px;
+    }
+    .modal.show{display:grid;}
+    .modalCard{
+      width: min(820px, 96vw);
+      background: rgba(255,255,255,.94);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r24);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      text-align:center;
+    }
+    .modalCard h3{margin:0; font-size: 20px; letter-spacing:-.6px; font-weight:1000;}
+    .modalCard p{margin: 10px 0 0; color: rgba(71,85,105,.92); font-weight:950; font-size: 14px; line-height: 1.6;}
+    .mono{
+      margin-top: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: rgba(37,99,235,.08);
+      border: 1px solid rgba(37,99,235,.18);
+      border-radius: 16px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 950;
+      color: rgba(15,23,42,.92);
+      text-align:left;
+      overflow:auto;
+      max-height: 200px;
+      white-space: pre-wrap;
+      display:none;
+    }
+    #exportCanvas{display:none;}
+
+    /* BLUE MODERN REFINE */
+    :root{
+      --bg1:#f8fbff;
+      --bg2:#eef6ff;
+      --card: rgba(255,255,255,.78);
+      --stroke: rgba(59,130,246,.20);
+      --text:#0f172a;
+      --muted:#475569;
+      --pri:#2563eb;
+      --pri2:#60a5fa;
+      --pri3:#1d4ed8;
+      --soft:#eff6ff;
+      --shadow: 0 24px 70px rgba(15,23,42,.12);
+      --shadow2: 0 14px 34px rgba(15,23,42,.08);
+    }
+
+    body{
+      background:
+        radial-gradient(900px 720px at 12% 10%, rgba(59,130,246,.20) 0%, rgba(255,255,255,0) 62%),
+        radial-gradient(820px 680px at 86% 82%, rgba(14,165,233,.16) 0%, rgba(255,255,255,0) 60%),
+        linear-gradient(135deg, #f8fbff 0%, #eef6ff 48%, #eaf2ff 100%);
+    }
+
+    .topbar{
+      background: linear-gradient(90deg, rgba(255,255,255,.80), rgba(239,246,255,.72));
+      box-shadow: 0 8px 28px rgba(15,23,42,.045);
+    }
+    .panel, .startCard, .infoBox, .cardBox, .rightPanel, .stage, .modalCard{
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .logo{
+      background: conic-gradient(from 140deg, #dbeafe, #60a5fa, #2563eb, #93c5fd, #dbeafe);
+      box-shadow: 0 0 0 10px rgba(37,99,235,.10), 0 10px 26px rgba(37,99,235,.18);
+    }
+    .status{
+      padding:9px 12px;
+      border:1px solid rgba(59,130,246,.18);
+      border-radius:999px;
+      background:rgba(255,255,255,.66);
+      box-shadow:0 8px 22px rgba(15,23,42,.05);
+    }
+    .cta{
+      position:relative;
+      overflow:hidden;
+      box-shadow: var(--shadow2);
+    }
+    .cta::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:linear-gradient(120deg, rgba(255,255,255,.0), rgba(255,255,255,.28), rgba(255,255,255,.0));
+      transform:translateX(-120%);
+      transition:transform .45s ease;
+      pointer-events:none;
+    }
+    .cta:hover::before{transform:translateX(120%);}
+    .cta:hover{filter:brightness(1.03); transform:translateY(-1px);}
+    .cta.primary{
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 54%, #60a5fa 100%);
+      box-shadow: 0 16px 36px rgba(37,99,235,.22);
+    }
+    .cta.ghost{
+      background: rgba(255,255,255,.78);
+      border:1px solid rgba(59,130,246,.22);
+    }
+    .cta.danger{
+      background: rgba(239,246,255,.82);
+      border:1px solid rgba(37,99,235,.16);
+    }
+    .startTitle{
+      background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 42%, #38bdf8 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow: 0 18px 48px rgba(37,99,235,.08);
+    }
+    .startCard{
+      padding: clamp(24px, 4vw, 42px) clamp(18px, 3vw, 34px);
+      border:1px solid rgba(59,130,246,.22);
+      background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(239,246,255,.76));
+    }
+    .startHint, .stepper, .pill, .toast{
+      background: rgba(255,255,255,.78);
+      border-color: rgba(59,130,246,.18);
+    }
+    .bubble{
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.90) 0%, rgba(147,197,253,.30) 44%, rgba(37,99,235,.14) 100%);
+      box-shadow: 0 20px 60px rgba(37,99,235,.10);
+    }
+    .thumb, .frameBtn img{
+      background: linear-gradient(180deg, #fff, #eff6ff);
+    }
+    .frameBtn:hover, .filterBtn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 16px 38px rgba(37,99,235,.10);
+      border-color: rgba(59,130,246,.28);
+    }
+    .control:focus{
+      border-color: rgba(37,99,235,.38);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    @media (max-width: 720px){
+      .topbar{height:66px;}
+      .navBar{gap:8px; padding:10px;}
+      .navBar .cta{min-width:0;}
+      .stepper{padding:8px;}
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <span class="logo"></span>
+        <div class="brandText">
+          <b>오늘 네컷</b>
+          <small>O.cut</small>
+        </div>
+      </div>
+      <div class="status" id="status"><span class="dot"></span>대기</div>
+    </div>
+
+    <div class="main">
+
+      <!-- START -->
+      <section class="screen active" id="screenStart">
+        <div class="panel">
+          <div class="startWrap" id="tapToStart" role="button" tabindex="0" aria-label="클릭하여 시작">
+            <div class="bubbles" aria-hidden="true">
+              <div class="bubble" style="left:-60px; top:40px;"></div>
+              <div class="bubble b2" style="right:-70px; top:120px;"></div>
+              <div class="bubble b3" style="left:18%; bottom:-70px;"></div>
+            </div>
+
+            <div class="startCard">
+              <h1 class="startTitle">O.cut</h1>
+              <div class="startSub">오늘 네컷</div>
+              <div class="startHint"><span class="pulse"></span>클릭하시면 시작됩니다.</div>
+
+              <div class="startBtnRow">
+                <button class="cta primary" id="btnStart" type="button">시작</button>
+                <button class="cta ghost" id="btnStartTTS" type="button">안내 음성 ON</button>
+              </div>
+
+              <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INFO -->
+      <section class="screen" id="screenInfo">
+        <div class="panel">
+          <div class="infoWrap">
+            <div class="infoBox">
+              <h2>촬영 안내</h2>
+              <p>
+                10초마다 1장씩 총 4장을 자동 촬영합니다.<br/>
+                촬영 후 <b>필터 → 프레임 → 문구</b>를 선택하고 저장합니다.
+              </p>
+              <div class="infoTimer" id="infoTimer">14</div>
+              <div class="infoProgress"><i id="infoBar"></i></div>
+
+              <div class="infoBtns">
+                <button class="cta ghost" id="btnInfoSilent" type="button">안내 음성 켜기/끄기</button>
+                <button class="cta primary" id="btnInfoSkip" type="button">바로 촬영</button>
+              </div>
+
+              <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SHOOT -->
+      <section class="screen" id="screenShoot">
+        <div class="panel">
+          <div class="shootGrid">
+            <div class="videoWrap" id="videoWrap">
+              <video id="video" playsinline autoplay muted></video>
+              <div class="flash" id="flash"></div>
+
+              <div class="hud">
+                <div class="hudTop">
+                  <div class="pill" id="pillStep">촬영 1 / 4</div>
+                  <div class="pill" id="pillMsg">10초 뒤 촬영</div>
+                </div>
+                <div class="count" id="countdown">10</div>
+              </div>
+              <div class="toast" id="toast">안내</div>
+            </div>
+
+            <div class="sideCol">
+              <div class="cardBox">
+                <div class="cardTitle">미리보기</div>
+                <div class="thumbGrid" id="thumbGrid">
+                  <div class="thumb" data-i="0">1</div>
+                  <div class="thumb" data-i="1">2</div>
+                  <div class="thumb" data-i="2">3</div>
+                  <div class="thumb" data-i="3">4</div>
+                </div>
+              </div>
+
+              <div class="cardBox">
+                <div class="cardTitle">촬영 제어</div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button class="cta danger" id="btnCancel" type="button" style="flex:1; min-width:140px;">취소</button>
+                  <button class="cta ghost" id="btnRetake" type="button" style="flex:1; min-width:140px;" disabled>전체 다시찍기</button>
+                </div>
+                <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="navBar">
+            <button class="cta ghost" id="btnShootHome" type="button">처음</button>
+            <div class="stepper" aria-hidden="true">
+              <span class="stepDot on"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+            </div>
+            <button class="cta primary" id="btnShootNext" type="button" disabled>다음</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- FILTER -->
+      <section class="screen" id="screenFilter">
+        <div class="panel">
+          <div class="editGrid">
+            <div class="stage">
+              <div class="previewWrap">
+                <canvas class="previewCanvas" id="previewCanvas"></canvas>
+              </div>
+            </div>
+
+            <div class="rightPanel">
+              <h2>필터</h2>
+              <p>선택 즉시 미리보기에 반영됩니다.</p>
+
+              <div class="field">
+                <label>필터 선택</label>
+                <div class="filterGrid" id="filterGrid"></div>
+                <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="navBar">
+            <button class="cta ghost" id="btnFilterBack" type="button">이전</button>
+            <div class="stepper" aria-hidden="true">
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+            </div>
+            <button class="cta primary" id="btnFilterNext" type="button">다음</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- FRAME -->
+      <section class="screen" id="screenFrame">
+        <div class="panel">
+          <div class="editGrid">
+            <div class="stage">
+              <div class="previewWrap">
+                <canvas class="previewCanvas" id="previewCanvas2"></canvas>
+              </div>
+            </div>
+
+            <div class="rightPanel">
+              <h2>프레임</h2>
+              <p>프레임 이미지를 눌러 선택합니다.</p>
+
+              <div class="field">
+                <label>프레임 5개</label>
+                <div class="frameGrid" id="frameGrid"></div>
+                <div class="help" id="frameHealth">프레임 점검 중…</div>
+              </div>
+
+              <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+            </div>
+          </div>
+
+          <div class="navBar">
+            <button class="cta ghost" id="btnFrameBack" type="button">이전</button>
+            <div class="stepper" aria-hidden="true">
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot"></span>
+              <span class="stepDot"></span>
+            </div>
+            <button class="cta primary" id="btnFrameNext" type="button">다음</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEXT -->
+      <section class="screen" id="screenText">
+        <div class="panel">
+          <div class="editGrid">
+            <div class="stage">
+              <div class="previewWrap">
+                <canvas class="previewCanvas" id="previewCanvas3"></canvas>
+              </div>
+            </div>
+
+            <div class="rightPanel">
+              <h2>문구</h2>
+              <p>문구 표시 여부를 선택합니다. (기본 OFF)</p>
+
+              <div class="field">
+                <label>문구 표시</label>
+                <div style="display:flex; gap:10px;">
+                  <button class="cta ghost" id="btnTextOn" type="button" style="flex:1;">ON</button>
+                  <button class="cta ghost" id="btnTextOff" type="button" style="flex:1;">OFF</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="textInput">문구 내용</label>
+                <input class="control" id="textInput" type="text" maxlength="50" placeholder="예) 풍산고 짱 · 2026.02.22" />
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                  <div>
+                    <label for="textSize" style="display:block; margin:8px 0 6px;">글씨 크기</label>
+                    <input class="control" id="textSize" type="number" min="14" max="52" value="22" />
+                  </div>
+                  <div>
+                    <label for="textPos" style="display:block; margin:8px 0 6px;">아래 여백(%)</label>
+                    <input class="control" id="textPos" type="number" min="2" max="18" value="6" step="0.1" />
+                  </div>
+                </div>
+                <div class="help">오류가 반복되면 관리자에게 문의하세요.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="navBar">
+            <button class="cta ghost" id="btnTextBack" type="button">이전</button>
+            <div class="stepper" aria-hidden="true">
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot"></span>
+            </div>
+            <button class="cta primary" id="btnTextNext" type="button">다음</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAVE -->
+      <section class="screen" id="screenSave">
+        <div class="panel">
+          <div class="editGrid">
+            <div class="stage">
+              <div class="previewWrap">
+                <canvas class="previewCanvas" id="previewCanvas4"></canvas>
+              </div>
+            </div>
+
+            <div class="rightPanel">
+              <h2>저장</h2>
+              <p>최종 미리보기 확인 후 저장하세요.</p>
+
+              <div class="field">
+                <label>저장</label>
+                <button class="cta primary" id="btnSave" type="button" style="width:100%; display:none;">PNG 저장</button>
+
+                <button class="cta ghost" id="btnPhoneDownload" type="button" style="width:100%; margin-top:10px;">
+                  사진 번호 만들기
+                </button>
+
+                <div id="shareBox" style="display:none; margin-top:14px; text-align:center;">
+                  <p style="font-weight:900; color:#475569; font-size:13px; line-height:1.5; margin:0;">
+                    휴대폰에서 다운로드 페이지를 연 뒤<br>
+                    아래 사진 번호를 입력하세요.
+                  </p>
+
+                  <div id="photoCode" style="
+                    margin:10px auto 0;
+                    display:inline-block;
+                    padding:12px 18px;
+                    border-radius:18px;
+                    background:#eff6ff;
+                    border:1px solid #bfdbfe;
+                    color:#1d4ed8;
+                    font-weight:1000;
+                    font-size:36px;
+                    letter-spacing:4px;
+                  ">
+                    ------
+                  </div>
+
+                  <a id="phoneDownloadLink" class="cta ghost" style="display:none; text-decoration:none; margin-top:10px;" target="_blank" aria-hidden="true">
+                    다운로드 페이지 열기
+                  </a>
+
+                  <p style="font-weight:900; color:#64748b; font-size:12px; line-height:1.5; margin:10px 0 0;">
+                    사진은 약 5분 뒤 만료됩니다.
+                  </p>
+                </div>
+
+                <button class="cta danger" id="btnHome" type="button" style="width:100%; margin-top:10px;">처음으로</button>
+                <div class="help" style="margin-top:10px;">저장이 되지 않으면 관리자에게 문의하세요.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="navBar">
+            <button class="cta ghost" id="btnSaveBack" type="button">이전</button>
+            <div class="stepper" aria-hidden="true">
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+              <span class="stepDot on"></span>
+            </div>
+            <button class="cta primary" id="btnDone" type="button">완료</button>
+          </div>
+        </div>
+      </section>
+
+      <canvas id="exportCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal" id="modal">
+    <div class="modalCard">
+      <h3 id="modalTitle">오류</h3>
+      <p id="modalMsg">문제가 발생했습니다. 관리자에게 문의하세요.</p>
+      <div class="mono" id="modalDetail"></div>
+      <div style="margin-top:14px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+        <button class="cta primary" id="modalOk" type="button" style="width:min(320px, 92vw);">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 화면 전환
+    // =========================
+    const statusEl = document.getElementById('status');
+    const screens = {
+      start:  document.getElementById('screenStart'),
+      info:   document.getElementById('screenInfo'),
+      shoot:  document.getElementById('screenShoot'),
+      filter: document.getElementById('screenFilter'),
+      frame:  document.getElementById('screenFrame'),
+      text:   document.getElementById('screenText'),
+      save:   document.getElementById('screenSave'),
+    };
+    function show(name){
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screens[name].classList.add('active');
+      const label = (
+        name === 'start'  ? '대기' :
+        name === 'info'   ? '안내' :
+        name === 'shoot'  ? '촬영' :
+        name === 'filter' ? '필터' :
+        name === 'frame'  ? '프레임' :
+        name === 'text'   ? '문구' : '저장'
+      );
+      statusEl.innerHTML = `<span class="dot"></span>${label}`;
+    }
+
+    // =========================
+    // 모달
+    // =========================
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMsg = document.getElementById('modalMsg');
+    const modalDetail = document.getElementById('modalDetail');
+    const modalOk = document.getElementById('modalOk');
+    function openModal(title, msg, detail){
+      modalTitle.textContent = title || '오류';
+      modalMsg.textContent = msg || '문제가 발생했습니다. 관리자에게 문의하세요.';
+      if(detail){
+        modalDetail.style.display = 'block';
+        modalDetail.textContent = String(detail);
+      }else{
+        modalDetail.style.display = 'none';
+        modalDetail.textContent = '';
+      }
+      modal.classList.add('show');
+      speakNow('오류가 발생했습니다. 관리자에게 문의하세요.');
+    }
+    function closeModal(){ modal.classList.remove('show'); }
+    modalOk.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+
+    // =========================
+    // ✅ TTS: "한 문장씩" 끝까지 읽고 다음 문장 (안내용)
+    // - 안내에서는 speakLineAwait를 사용 (절대 끊김 X)
+    // - 카운트다운/찰칵은 speakNow만 사용 (짧게)
+    // =========================
+    let ttsEnabled = true;
+
+    function makeUtter(text){
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      return u;
+    }
+
+    function clearSpeech(){
+      try{ window.speechSynthesis.cancel(); }catch(e){}
+    }
+
+    // ✅ 안내용: 문장 1개 끝날 때까지 기다림
+    function speakLineAwait(text){
+      if(!ttsEnabled) return Promise.resolve();
+      if(!('speechSynthesis' in window)) return Promise.resolve();
+
+      return new Promise((resolve) => {
+        const u = makeUtter(text);
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        window.speechSynthesis.speak(u);
+      });
+    }
+
+    // ✅ 즉시 말하기(짧은 카운트/알림)
+    function speakNow(text){
+      if(!ttsEnabled) return;
+      if(!('speechSynthesis' in window)) return;
+      try{ window.speechSynthesis.cancel(); }catch(e){}
+      const u = makeUtter(text);
+      window.speechSynthesis.speak(u);
+    }
+
+    // =========================
+    // DOM
+    // =========================
+    const tapToStart = document.getElementById('tapToStart');
+    const btnStart = document.getElementById('btnStart');
+    const btnStartTTS = document.getElementById('btnStartTTS');
+
+    const infoTimerEl = document.getElementById('infoTimer');
+    const infoBar = document.getElementById('infoBar');
+    const btnInfoSkip = document.getElementById('btnInfoSkip');
+    const btnInfoSilent = document.getElementById('btnInfoSilent');
+
+    const video = document.getElementById('video');
+    const flashEl = document.getElementById('flash');
+    const videoWrap = document.getElementById('videoWrap');
+    const countdownEl = document.getElementById('countdown');
+    const pillStep = document.getElementById('pillStep');
+    const pillMsg  = document.getElementById('pillMsg');
+    const toastEl = document.getElementById('toast');
+
+    const btnCancel = document.getElementById('btnCancel');
+    const btnRetake = document.getElementById('btnRetake');
+    const btnShootHome = document.getElementById('btnShootHome');
+    const btnShootNext = document.getElementById('btnShootNext');
+
+    const btnFilterBack = document.getElementById('btnFilterBack');
+    const btnFilterNext = document.getElementById('btnFilterNext');
+    const btnFrameBack = document.getElementById('btnFrameBack');
+    const btnFrameNext = document.getElementById('btnFrameNext');
+    const btnTextBack = document.getElementById('btnTextBack');
+    const btnTextNext = document.getElementById('btnTextNext');
+    const btnSaveBack = document.getElementById('btnSaveBack');
+    const btnDone = document.getElementById('btnDone');
+
+    const btnSave = document.getElementById('btnSave');
+    const btnHome = document.getElementById('btnHome');
+    const btnPhoneDownload = document.getElementById('btnPhoneDownload');
+    const shareBox = document.getElementById('shareBox');
+    const photoCode = document.getElementById('photoCode');
+    const phoneDownloadLink = document.getElementById('phoneDownloadLink');
+
+    const thumbs = [...document.querySelectorAll('.thumb')];
+
+    const filterGrid = document.getElementById('filterGrid');
+    const frameGrid = document.getElementById('frameGrid');
+    const frameHealth = document.getElementById('frameHealth');
+
+    const btnTextOn = document.getElementById('btnTextOn');
+    const btnTextOff = document.getElementById('btnTextOff');
+    const textInput = document.getElementById('textInput');
+    const textSize = document.getElementById('textSize');
+    const textPos = document.getElementById('textPos');
+
+    const previewCanvases = [
+      document.getElementById('previewCanvas'),
+      document.getElementById('previewCanvas2'),
+      document.getElementById('previewCanvas3'),
+      document.getElementById('previewCanvas4'),
+    ];
+    const exportCanvas = document.getElementById('exportCanvas');
+
+    // =========================
+    // 상태
+    // =========================
+    const INTERVAL_SEC = 10;
+    const TOTAL_SHOTS = 4;
+
+    // ✅ 촬영 안내 시간 늘림(초)
+    const INFO_SECONDS = 22;
+
+    const INFO_TTS_LINES = [
+      '촬영 안내를 시작합니다.',
+      '10초마다 한 장씩 총 4장을 자동 촬영합니다.',
+      '촬영 후 필터, 프레임, 문구를 선택하고 저장합니다.'
+    ];
+
+    let stream = null;
+    let shots = Array(TOTAL_SHOTS).fill(null);      // dataURL
+    let shotImgs = Array(TOTAL_SHOTS).fill(null);   // Image()
+    let running = false;
+    let aborter = null;
+
+    // =========================
+    // 유틸
+    // =========================
+    const sleep = (ms) => new Promise(r=>setTimeout(r, ms));
+    function setCountdownVisible(v){ countdownEl.classList.toggle('show', v); }
+    function setCountdownText(t){ countdownEl.textContent = String(t); }
+    function toast(msg, ms=900){
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(()=>toastEl.classList.remove('show'), ms);
+    }
+
+    function setThumb(i){
+      const el = thumbs[i];
+      el.innerHTML = '';
+      if(!shots[i]){ el.textContent = String(i+1); return; }
+      const im = new Image();
+      im.src = shots[i];
+      el.appendChild(im);
+    }
+
+    function resetShots(){
+      shots = Array(TOTAL_SHOTS).fill(null);
+      shotImgs = Array(TOTAL_SHOTS).fill(null);
+      for(let i=0;i<TOTAL_SHOTS;i++) setThumb(i);
+      btnRetake.disabled = true;
+      btnShootNext.disabled = true;
+      if(shareBox){
+        shareBox.style.display = 'none';
+        photoCode.textContent = '------';
+        if(phoneDownloadLink) phoneDownloadLink.removeAttribute('href');
+        btnPhoneDownload.textContent = '사진 번호 만들기';
+        btnPhoneDownload.disabled = false;
+      }
+      refreshAllPreviews();
+    }
+
+    // =========================
+    // 필터
+    // =========================
+    const FILTERS = [
+      { id:'none',  name:'기본',   css:'none',                                            tag:'원본' },
+      { id:'bw',    name:'흑백',   css:'grayscale(1) contrast(1.08)',                     tag:'B/W' },
+      { id:'sepia', name:'세피아', css:'sepia(.9) contrast(1.04) saturate(1.12)',         tag:'빈티지' },
+      { id:'soft',  name:'소프트', css:'brightness(1.06) contrast(.98) saturate(.96)',    tag:'부드럽게' },
+      { id:'vivid', name:'비비드', css:'contrast(1.14) saturate(1.45)',                   tag:'쨍하게' },
+    ];
+    let selectedFilter = FILTERS[0];
+
+    function applyCSSFilter(){
+      document.documentElement.style.setProperty('--active-filter', selectedFilter.css);
+    }
+
+    function renderFilterButtons(){
+      filterGrid.innerHTML = '';
+      FILTERS.forEach(f=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'filterBtn' + (f.id === selectedFilter.id ? ' active' : '');
+        btn.innerHTML = `<div>${f.name}</div><div class="tag">${f.tag}</div>`;
+        btn.addEventListener('click', ()=>{
+          selectedFilter = f;
+          applyCSSFilter();
+          [...filterGrid.querySelectorAll('.filterBtn')].forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          speakNow('필터가 적용되었습니다.');
+          refreshAllPreviews();
+        });
+        filterGrid.appendChild(btn);
+      });
+    }
+
+    // =========================
+    // 프레임 5개 (template1~5.png)
+    // =========================
+    const FRAMES = [
+      { id:'t1', name:'템플릿 1', file:'template1.png' },
+      { id:'t2', name:'템플릿 2', file:'template2.png' },
+      { id:'t3', name:'템플릿 3', file:'template3.png' },
+      { id:'t4', name:'템플릿 4', file:'template4.png' },
+      { id:'t5', name:'템플릿 5', file:'template5.png' },
+    ];
+    let selectedFrame = FRAMES[0];
+    const frameOK = new Map();
+    const frameCache = new Map(); // file -> Image()
+
+    function loadImage(src){
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('image load fail: ' + src));
+        img.src = src;
+      });
+    }
+
+    // 슬롯 위치(퍼센트)
+    const SLOT_PERCENT = {
+      t1: [
+        {x:0.05, y:0.23, w:0.44, h:0.22},
+        {x:0.51, y:0.23, w:0.44, h:0.22},
+        {x:0.05, y:0.54, w:0.44, h:0.22},
+        {x:0.51, y:0.54, w:0.44, h:0.22},
+      ],
+      t2: [
+        {x:0.05, y:0.23, w:0.44, h:0.22},
+        {x:0.51, y:0.23, w:0.44, h:0.22},
+        {x:0.05, y:0.54, w:0.44, h:0.22},
+        {x:0.51, y:0.54, w:0.44, h:0.22},
+      ],
+      t3: [
+        {x:0.05, y:0.23, w:0.44, h:0.22},
+        {x:0.51, y:0.23, w:0.44, h:0.22},
+        {x:0.05, y:0.54, w:0.44, h:0.22},
+        {x:0.51, y:0.54, w:0.44, h:0.22},
+      ],
+      t4: [
+        {x:0.05, y:0.23, w:0.44, h:0.22},
+        {x:0.51, y:0.23, w:0.44, h:0.22},
+        {x:0.05, y:0.54, w:0.44, h:0.22},
+        {x:0.51, y:0.54, w:0.44, h:0.22},
+      ],
+      t5: [
+        {x:0.05, y:0.23, w:0.44, h:0.22},
+        {x:0.51, y:0.23, w:0.44, h:0.22},
+        {x:0.05, y:0.54, w:0.44, h:0.22},
+        {x:0.51, y:0.54, w:0.44, h:0.22},
+      ],
+    };
+
+    async function checkFramesAndRender(){
+      frameHealth.textContent = '프레임 점검 중…';
+      frameGrid.innerHTML = '';
+      let okCount = 0;
+      const missing = [];
+
+      for(const f of FRAMES){
+        try{
+          const img = await loadImage(f.file);
+          frameOK.set(f.file, true);
+          frameCache.set(f.file, img);
+          okCount++;
+        }catch(e){
+          frameOK.set(f.file, false);
+          missing.push(f.file);
+        }
+      }
+
+      FRAMES.forEach((f, idx)=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'frameBtn';
+        btn.dataset.id = f.id;
+
+        const ok = frameOK.get(f.file) !== false;
+        if(!ok) btn.classList.add('disabled');
+
+        const im = document.createElement('img');
+        im.alt = f.name;
+        im.src = ok ? f.file : '';
+        btn.appendChild(im);
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.innerHTML = `<span>${f.name}</span><span class="badge">${ok ? '선택' : '없음'}</span>`;
+        btn.appendChild(meta);
+
+        btn.addEventListener('click', ()=>{
+          if(!ok){
+            openModal('프레임 오류', '프레임 파일을 찾을 수 없습니다. 관리자에게 문의하세요.', f.file);
+            return;
+          }
+          selectedFrame = f;
+          [...frameGrid.querySelectorAll('.frameBtn')].forEach(b=>b.classList.toggle('active', b.dataset.id === f.id));
+          speakNow('프레임이 적용되었습니다.');
+          refreshAllPreviews();
+        });
+
+        frameGrid.appendChild(btn);
+
+        if(idx === 0 && ok){
+          selectedFrame = f;
+          btn.classList.add('active');
+        }
+      });
+
+      frameHealth.textContent = missing.length
+        ? `사용 가능: ${okCount}개 / 누락: ${missing.length}개 (누락 시 관리자 문의)`
+        : `프레임 준비 완료 (${okCount}개)`;
+    }
+
+    // =========================
+    // 문구 (기본 OFF)
+    // =========================
+    let textEnabled = false;
+
+    function setTextEnabled(on){
+      textEnabled = !!on;
+      textInput.disabled = !textEnabled;
+      textSize.disabled = !textEnabled;
+      textPos.disabled = !textEnabled;
+
+      // 버튼 시각 상태(최소 변경)
+      btnTextOn.style.borderColor = textEnabled ? 'rgba(37,99,235,.45)' : 'rgba(37,99,235,.22)';
+      btnTextOff.style.borderColor = !textEnabled ? 'rgba(37,99,235,.45)' : 'rgba(37,99,235,.22)';
+
+      speakNow(textEnabled ? '문구가 켜졌습니다.' : '문구가 꺼졌습니다.');
+      refreshAllPreviews();
+    }
+    btnTextOn.addEventListener('click', ()=> setTextEnabled(true));
+    btnTextOff.addEventListener('click', ()=> setTextEnabled(false));
+    [textInput, textSize, textPos].forEach(el => el.addEventListener('input', refreshAllPreviews));
+
+    // =========================
+    // ✅ 캔버스 합성
+    // - 사진이 남색 박스에 딱 맞도록 inset 최소화
+    // =========================
+    function drawCover(ctx, img, dx, dy, dw, dh){
+      const iw = img.width, ih = img.height;
+      const ir = iw/ih, dr = dw/dh;
+      let sx=0, sy=0, sw=iw, sh=ih;
+      if(ir > dr){
+        sw = Math.round(ih * dr);
+        sx = Math.round((iw - sw)/2);
+      }else{
+        sh = Math.round(iw / dr);
+        sy = Math.round((ih - sh)/2);
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    async function renderComposite(targetCanvas){
+      const frameOkNow = frameOK.get(selectedFrame.file) !== false;
+      let frameImg = frameCache.get(selectedFrame.file);
+
+      if(frameOkNow && !frameImg){
+        frameImg = await loadImage(selectedFrame.file);
+        frameCache.set(selectedFrame.file, frameImg);
+      }
+
+      const baseW = frameImg ? frameImg.width : 1356;
+      const baseH = frameImg ? frameImg.height : 2048;
+
+      targetCanvas.width = baseW;
+      targetCanvas.height = baseH;
+      const ctx = targetCanvas.getContext('2d');
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      ctx.clearRect(0,0,baseW,baseH);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0,0,baseW,baseH);
+
+      // 1) 템플릿 먼저 그림
+      if(frameImg) ctx.drawImage(frameImg, 0, 0);
+
+      // 2) 슬롯 내부에 사진(위에) — 남색 박스에 "딱" 맞추기
+      const rectsP = SLOT_PERCENT[selectedFrame.id] || SLOT_PERCENT.t1;
+      const rects = rectsP.map(r => ({
+        x: Math.round(r.x * baseW),
+        y: Math.round(r.y * baseH),
+        w: Math.round(r.w * baseW),
+        h: Math.round(r.h * baseH),
+      }));
+
+      const hasAll = shotImgs.every(Boolean);
+
+      // ✅ inset 줄임(기존 0.6% -> 0.18% 수준): 박스에 더 꽉 차게
+      const inset = Math.max(2, Math.round(baseW * 0.0018));
+
+      if(hasAll){
+        ctx.filter = selectedFilter.css || 'none';
+        for(let i=0;i<4;i++){
+          const r = rects[i];
+          const ix = r.x + inset;
+          const iy = r.y + inset;
+          const iw = Math.max(1, r.w - inset*2);
+          const ih = Math.max(1, r.h - inset*2);
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(ix, iy, iw, ih);
+          ctx.clip();
+          drawCover(ctx, shotImgs[i], ix, iy, iw, ih);
+          ctx.restore();
+        }
+        ctx.filter = 'none';
+      }else{
+        // 촬영 전/미완료: 자리 표시
+        ctx.fillStyle = 'rgba(15,23,42,.08)';
+        rects.forEach((r, i)=>{
+          ctx.fillRect(r.x+inset, r.y+inset, r.w-inset*2, r.h-inset*2);
+          ctx.fillStyle = 'rgba(71,85,105,.90)';
+          ctx.font = `1000 ${Math.round(baseW*0.03)}px system-ui, -apple-system, "Noto Sans KR", sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(i+1), r.x + r.w/2, r.y + r.h/2);
+        });
+      }
+
+      // 3) 문구(선택)
+      if(textEnabled){
+        const txt = (textInput.value || '오늘 네컷 · O.cut').trim();
+        const fontPx = Math.max(14, Math.min(52, Number(textSize.value) || 22));
+        const bottomPct = Math.max(2, Math.min(18, Number(textPos.value) || 6));
+        const scaledFont = Math.round(fontPx * (baseW / 1356));
+
+        ctx.save();
+        ctx.font = `1000 ${scaledFont}px system-ui, -apple-system, "Noto Sans KR", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const padX = Math.round(scaledFont * 0.9);
+        const padY = Math.round(scaledFont * 0.55);
+        const x = Math.round(baseW * 0.5);
+        const y = Math.round(baseH * (1 - bottomPct/100));
+
+        const w = Math.ceil(ctx.measureText(txt).width);
+        const boxW = Math.min(baseW - 80, w + padX*2);
+        const boxH = Math.round(scaledFont + padY*1.2);
+        const boxX = Math.round(x - boxW/2);
+        const boxY = Math.round(y - boxH/2);
+        const rr = Math.round(scaledFont * 0.60);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        roundRect(ctx, boxX, boxY, boxW, boxH, rr);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(59,130,246,0.55)';
+        ctx.lineWidth = Math.max(2, Math.round(scaledFont * 0.08));
+        roundRect(ctx, boxX, boxY, boxW, boxH, rr);
+        ctx.stroke();
+
+        ctx.fillStyle = '#111';
+        ctx.shadowColor = 'rgba(255,255,255,0.55)';
+        ctx.shadowBlur = Math.round(scaledFont * 0.9);
+        ctx.fillText(txt, x, y);
+        ctx.restore();
+      }
+    }
+
+    function refreshAllPreviews(){
+      previewCanvases.forEach(c => {
+        if(!c) return;
+        renderComposite(c).catch(()=>{});
+      });
+    }
+
+    // =========================
+    // 카메라
+    // =========================
+    async function waitForVideoReady(){
+      const start = performance.now();
+      while((video.videoWidth === 0 || video.videoHeight === 0) && performance.now()-start < 2500){
+        await sleep(50);
+      }
+      if(video.videoWidth === 0) throw new Error('카메라 준비 실패');
+    }
+
+    async function openCamera(){
+      const constraints = {
+        video: { facingMode:"user", width:{ideal:1920}, height:{ideal:1080} },
+        audio: false
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      await video.play();
+      await waitForVideoReady();
+    }
+
+    function closeCamera(){
+      if(stream){
+        stream.getTracks().forEach(t=>t.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+    }
+
+    // =========================
+    // 촬영 FX/셔터/카운트다운 사운드
+    // =========================
+    let audioCtx = null;
+
+    function getAudioCtx(){
+      try{
+        audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function unlockAudio(){
+      const ctx = getAudioCtx();
+      if(!ctx) return;
+      try{
+        if(ctx.state === 'suspended') await ctx.resume();
+      }catch(e){}
+    }
+
+    function tone(freq=880, duration=0.12, gain=0.12, type='sine', delay=0){
+      const ctx = getAudioCtx();
+      if(!ctx) return;
+      try{
+        const start = ctx.currentTime + delay;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(gain, start + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(start);
+        o.stop(start + duration + 0.03);
+      }catch(e){}
+    }
+
+    function playReadySound(){
+      tone(523, 0.09, 0.08, 'sine', 0);
+      tone(659, 0.09, 0.08, 'sine', 0.10);
+      tone(784, 0.14, 0.09, 'sine', 0.20);
+    }
+
+    function playTickSound(t){
+      // 3,2,1은 더 또렷하게, 나머지는 작게
+      if(t <= 3){
+        tone(740 + (3 - t) * 80, 0.12, 0.10, 'square');
+      }else{
+        tone(520, 0.055, 0.045, 'triangle');
+      }
+    }
+
+    function playShutterSound(){
+      // 실제 셔터 느낌: 짧은 고음 + 낮은 클릭
+      tone(1180, 0.055, 0.13, 'square', 0);
+      tone(620, 0.075, 0.10, 'triangle', 0.055);
+      tone(1500, 0.035, 0.055, 'sine', 0.115);
+    }
+
+    function playSuccessSound(){
+      tone(660, 0.11, 0.08, 'sine', 0);
+      tone(880, 0.11, 0.08, 'sine', 0.12);
+      tone(1046, 0.18, 0.09, 'sine', 0.24);
+    }
+
+    function clickBeep(){
+      playShutterSound();
+    }
+
+    function shutterFX(){
+      flashEl.classList.remove('on');
+      void flashEl.offsetWidth;
+      flashEl.classList.add('on');
+      videoWrap.animate(
+        [
+          { transform:'scale(1)', filter:'brightness(1)' },
+          { transform:'scale(1.018)', filter:'brightness(1.18)' },
+          { transform:'scale(1)', filter:'brightness(1)' }
+        ],
+        { duration: 260, easing:'cubic-bezier(.2,.8,.2,1)' }
+      );
+      clickBeep();
+    }
+
+    // =========================
+    // 캡처
+    // =========================
+    function captureFrameRaw(){
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+
+      const targetW = 1400;
+      const targetH = 1050;
+
+      const srcAspect = vw / vh;
+      const dstAspect = targetW / targetH;
+
+      let sx=0, sy=0, sw=vw, sh=vh;
+      if(srcAspect > dstAspect){
+        sw = Math.round(vh * dstAspect);
+        sx = Math.round((vw - sw)/2);
+      }else{
+        sh = Math.round(vw / dstAspect);
+        sy = Math.round((vh - sh)/2);
+      }
+
+      const c = document.createElement('canvas');
+      c.width = targetW; c.height = targetH;
+      const ctx = c.getContext('2d', { alpha:false });
+
+      ctx.save();
+      ctx.translate(targetW, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+      ctx.restore();
+
+      return c.toDataURL('image/jpeg', 0.92);
+    }
+
+    async function dataUrlToImage(dataUrl){
+      const img = new Image();
+      await new Promise((res, rej)=>{
+        img.onload = res;
+        img.onerror = rej;
+        img.src = dataUrl;
+      });
+      return img;
+    }
+
+    // =========================
+    // 촬영 루프
+    // =========================
+    async function runShoot(){
+      if(running) return;
+      running = true;
+      btnRetake.disabled = true;
+      btnShootNext.disabled = true;
+
+      aborter = new AbortController();
+      const signal = aborter.signal;
+
+      try{
+        speakNow('촬영을 시작합니다.');
+        for(let i=0;i<TOTAL_SHOTS;i++){
+          if(signal.aborted) throw new Error('aborted');
+
+          pillStep.textContent = `촬영 ${i+1} / ${TOTAL_SHOTS}`;
+          toast(`${i+1}번째 촬영 준비`, 700);
+
+          // ✅ 촬영 중 안내는 화면만(말이 카운트다운에 끊기지 않게)
+          // (원하면 여기서 한 문장만 speakNow로 짧게 추가 가능)
+
+          for(let t=INTERVAL_SEC; t>=1; t--){
+            if(signal.aborted) throw new Error('aborted');
+            pillMsg.textContent = `${t}초 뒤 촬영`;
+            setCountdownText(t);
+            setCountdownVisible(true);
+            playTickSound(t);
+
+            // ✅ 3,2,1만 TTS (빠르고 정확하게)
+            if(t === 3) speakNow('3');
+            if(t === 2) speakNow('2');
+            if(t === 1) speakNow('1');
+
+            await sleep(1000);
+          }
+
+          setCountdownVisible(false);
+          pillMsg.textContent = '찰칵!';
+          toast('찰칵!', 650);
+
+          // ✅ "찰칵 소리(비프)+플래시+캡처"를 한 타이밍에
+          shutterFX();
+          const d = captureFrameRaw();
+          shots[i] = d;
+          shotImgs[i] = await dataUrlToImage(d);
+          setThumb(i);
+
+          // ✅ 찰칵 TTS는 캡처 직후(타이밍 어긋남 최소화)
+          speakNow('찰칵');
+
+          await sleep(260);
+        }
+
+        pillMsg.textContent = '촬영 완료';
+        toast('촬영 완료', 900);
+        playSuccessSound();
+        speakNow('촬영이 완료되었습니다.');
+
+        btnRetake.disabled = false;
+        btnShootNext.disabled = false;
+        refreshAllPreviews();
+      } catch(e){
+        if(String(e && e.message) !== 'aborted'){
+          openModal('촬영 오류', '촬영 중 문제가 발생했습니다. 관리자에게 문의하세요.', e && e.message ? e.message : e);
+        }
+      } finally {
+        running = false;
+      }
+    }
+
+    function cancelShoot(){
+      if(aborter) aborter.abort();
+      aborter = null;
+      running = false;
+      clearSpeech();
+    }
+
+    // =========================
+    // 안내 화면(시간 늘림 + 한 문장씩)
+    // =========================
+    let infoSkip = false;
+
+    btnInfoSkip.addEventListener('click', ()=>{ infoSkip = true; });
+
+    btnInfoSilent.addEventListener('click', ()=>{
+      ttsEnabled = !ttsEnabled;
+      speakNow(ttsEnabled ? '안내 음성이 켜졌습니다.' : '안내 음성이 꺼졌습니다.');
+    });
+
+    async function showInfoThenShoot(){
+      infoSkip = false;
+      show('info');
+
+      // ✅ 안내 시작 시 기존 발화 정리
+      clearSpeech();
+
+      // ✅ 한 문장씩 끝까지 읽고 다음 문장
+      if(ttsEnabled && ('speechSynthesis' in window)){
+        for(const line of INFO_TTS_LINES){
+          if(infoSkip) break;
+          await speakLineAwait(line);
+          // 문장 사이 텀(자연스럽게)
+          await sleep(250);
+        }
+      }
+
+      // ✅ 안내 시간 충분히 길게
+      for(let t=INFO_SECONDS; t>=1; t--){
+        if(infoSkip) break;
+        infoTimerEl.textContent = String(t);
+        infoBar.style.width = `${Math.round(((INFO_SECONDS - t + 1) / INFO_SECONDS) * 100)}%`;
+        await sleep(1000);
+      }
+
+      infoTimerEl.textContent = 'START';
+      infoBar.style.width = '100%';
+      await sleep(250);
+
+      show('shoot');
+      playReadySound();
+
+      try{
+        await openCamera();
+      }catch(e){
+        openModal('카메라 오류', '카메라를 열 수 없습니다. 관리자에게 문의하세요.', (e && e.message) ? e.message : e);
+        show('start');
+        return;
+      }
+
+      runShoot();
+    }
+
+    // =========================
+    // 저장
+    // =========================
+    async function exportPNG(){
+      if(!shotImgs.every(Boolean)){
+        openModal('저장 불가', '촬영이 완료되지 않았습니다. 관리자에게 문의하세요.', '');
+        return;
+      }
+      if(frameOK.get(selectedFrame.file) === false){
+        openModal('프레임 오류', '프레임 파일을 찾을 수 없습니다. 관리자에게 문의하세요.', selectedFrame.file);
+        return;
+      }
+
+      try{
+        await renderComposite(exportCanvas);
+      }catch(e){
+        openModal('저장 오류', '저장을 진행할 수 없습니다. 관리자에게 문의하세요.', e && e.message ? e.message : e);
+        return;
+      }
+
+      const blob = await new Promise(res => exportCanvas.toBlob(res, 'image/png'));
+      if(!blob){
+        openModal('저장 오류', '저장을 진행할 수 없습니다. 관리자에게 문의하세요.', 'canvas toBlob 실패');
+        return;
+      }
+
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `오늘네컷_Ocut_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      speakNow('저장되었습니다.');
+    }
+
+    // =========================
+    // 흐름
+    // =========================
+    function goHome(){
+      cancelShoot();
+      closeCamera();
+      resetShots();
+      show('start');
+    }
+
+    async function startFlow(){
+      await unlockAudio();
+      playReadySound();
+      resetShots();
+      applyCSSFilter();
+
+      // ✅ 문구 기본 OFF
+      setTextEnabled(false);
+
+      refreshAllPreviews();
+      await showInfoThenShoot();
+    }
+
+    // Start
+    tapToStart.addEventListener('click', startFlow);
+    btnStart.addEventListener('click', (e)=>{ e.stopPropagation(); startFlow(); });
+    tapToStart.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); startFlow(); }
+    });
+
+    btnStartTTS.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      ttsEnabled = !ttsEnabled;
+      btnStartTTS.textContent = ttsEnabled ? '안내 음성 ON' : '안내 음성 OFF';
+      speakNow(ttsEnabled ? '안내 음성이 켜졌습니다.' : '안내 음성이 꺼졌습니다.');
+    });
+
+    // Shoot controls
+    btnCancel.addEventListener('click', ()=>{ cancelShoot(); closeCamera(); show('start'); });
+    btnRetake.addEventListener('click', ()=>{
+      cancelShoot();
+      resetShots();
+      speakNow('다시 촬영을 시작합니다.');
+      runShoot();
+    });
+    btnShootHome.addEventListener('click', goHome);
+    btnShootNext.addEventListener('click', ()=>{
+      if(!shotImgs.every(Boolean)){
+        openModal('이동 불가', '촬영이 완료되지 않았습니다. 관리자에게 문의하세요.', '');
+        return;
+      }
+      show('filter');
+      refreshAllPreviews();
+    });
+
+    // Nav
+    btnFilterBack.addEventListener('click', ()=> show('shoot'));
+    btnFilterNext.addEventListener('click', ()=> { show('frame'); refreshAllPreviews(); });
+
+    btnFrameBack.addEventListener('click', ()=> { show('filter'); refreshAllPreviews(); });
+    btnFrameNext.addEventListener('click', ()=> { show('text'); refreshAllPreviews(); });
+
+    btnTextBack.addEventListener('click', ()=> { show('frame'); refreshAllPreviews(); });
+    btnTextNext.addEventListener('click', ()=> { show('save'); refreshAllPreviews(); });
+
+    btnSaveBack.addEventListener('click', ()=> { show('text'); refreshAllPreviews(); });
+    btnDone.addEventListener('click', goHome);
+
+    // =========================
+    // Google Drive / Apps Script 사진 번호 다운로드 연동
+    // =========================
+    // ✅ Apps Script 웹 앱 URL
+    // 새 배포를 "새로 만들기"로 했다면 여기 URL만 새 /exec 주소로 바꾸세요.
+    // 기존 배포를 "배포 관리 → 연필 → 새 버전"으로 수정했다면 URL은 그대로 둬도 됩니다.
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec";
+
+    let ocutUploadFrame = null;
+    let ocutUploadForm = null;
+    let ocutPayloadInput = null;
+
+    function makeOcutPhotoCode(){
+      if(window.crypto && crypto.getRandomValues){
+        const arr = new Uint32Array(1);
+        crypto.getRandomValues(arr);
+        return String(100000 + (arr[0] % 900000));
+      }
+      return String(Math.floor(100000 + Math.random() * 900000));
+    }
+
+    function makeUploadToken(){
+      const rand = Math.random().toString(36).slice(2);
+      return `ocut-${Date.now()}-${rand}`;
+    }
+
+    function wait(ms){
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ✅ 업로드 용량을 줄이기 위해 최종 캔버스를 JPEG로 축소 변환
+    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.74) {
+      const maxW = 1000;
+      const maxH = 1500;
+      const scale = Math.min(1, maxW / canvas.width, maxH / canvas.height);
+
+      const out = document.createElement("canvas");
+      out.width = Math.max(1, Math.round(canvas.width * scale));
+      out.height = Math.max(1, Math.round(canvas.height * scale));
+
+      const ctx = out.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(canvas, 0, 0, out.width, out.height);
+
+      return out
+        .toDataURL(type, quality)
+        .replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+    }
+
+    function ensureOcutUploadForm(){
+      if(ocutUploadFrame && ocutUploadForm && ocutPayloadInput) return;
+
+      ocutUploadFrame = document.createElement("iframe");
+      ocutUploadFrame.name = "ocutAppsScriptUploadFrame";
+      ocutUploadFrame.style.display = "none";
+      document.body.appendChild(ocutUploadFrame);
+
+      ocutUploadForm = document.createElement("form");
+      ocutUploadForm.method = "POST";
+      ocutUploadForm.target = "ocutAppsScriptUploadFrame";
+      ocutUploadForm.style.display = "none";
+      ocutUploadForm.enctype = "application/x-www-form-urlencoded";
+
+      // ✅ 번호와 이미지를 payload 하나에 묶어서 전송
+      ocutPayloadInput = document.createElement("textarea");
+      ocutPayloadInput.name = "payload";
+      ocutPayloadInput.style.display = "none";
+
+      ocutUploadForm.appendChild(ocutPayloadInput);
+      document.body.appendChild(ocutUploadForm);
+    }
+
+    function submitByIframe(finalPayload, clientToken){
+      ensureOcutUploadForm();
+
+      return new Promise((resolve, reject) => {
+        let done = false;
+
+        const cleanup = () => {
+          window.removeEventListener("message", onMessage);
+          clearTimeout(timer);
+        };
+
+        const finish = (fn, value) => {
+          if(done) return;
+          done = true;
+          cleanup();
+          fn(value);
+        };
+
+        const onMessage = (event) => {
+          const data = event.data || {};
+          if(!data || data.type !== "OCUT_UPLOAD_RESULT") return;
+          if(data.clientToken !== clientToken) return;
+
+          if(data.status === "OK" && /^\d{6}$/.test(String(data.code || ""))){
+            finish(resolve, data);
+          }else{
+            finish(reject, new Error(data.message || data.status || "업로드 실패"));
+          }
+        };
+
+        const timer = setTimeout(() => {
+          finish(reject, new Error("iframe 응답을 받지 못했습니다."));
+        }, 45000);
+
+        window.addEventListener("message", onMessage);
+
+        ocutUploadForm.action = `${APPS_SCRIPT_URL}?mode=upload&clientToken=${encodeURIComponent(clientToken)}&t=${Date.now()}`;
+        ocutPayloadInput.value = JSON.stringify(finalPayload);
+        ocutUploadForm.submit();
+      });
+    }
+
+    async function submitByNoCorsFetch(finalPayload){
+      const body = new URLSearchParams();
+      body.append("payload", JSON.stringify(finalPayload));
+
+      // no-cors는 응답을 읽을 수 없지만, cross-origin Apps Script POST는 실제로 보낼 수 있음.
+      await fetch(`${APPS_SCRIPT_URL}?mode=upload&t=${Date.now()}`, {
+        method: "POST",
+        mode: "no-cors",
+        body
+      });
+
+      // Apps Script 응답을 읽을 수 없는 보조 전송이므로, 같은 code를 화면에 표시함.
+      return {
+        status: "OK",
+        code: finalPayload.code,
+        fallback: true
+      };
+    }
+
+    async function submitToAppsScriptPayload(payload){
+      if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
+        throw new Error("Apps Script 웹 앱 URL이 아직 설정되지 않았습니다.");
+      }
+
+      const clientToken = makeUploadToken();
+      const finalPayload = {
+        ...payload,
+        clientToken
+      };
+
+      // 1차: iframe + postMessage로 실제 서버 저장 번호 확인
+      try{
+        return await submitByIframe(finalPayload, clientToken);
+      }catch(firstErr){
+        console.warn("iframe upload failed; retrying with no-cors fetch", firstErr);
+      }
+
+      // 2차: 브라우저가 iframe 응답을 막는 경우를 대비한 보조 전송
+      return await submitByNoCorsFetch(finalPayload);
+    }
+
+    async function uploadToGoogleDriveWithCode(){
+      try{
+        btnPhoneDownload.disabled = true;
+        btnPhoneDownload.textContent = "사진 저장 중...";
+        photoCode.textContent = "저장 중";
+        shareBox.style.display = "block";
+
+        // 최종 합성 이미지를 exportCanvas에 렌더링
+        await renderComposite(exportCanvas);
+
+        // ✅ 한 번 만든 번호를 Drive 파일명과 화면 번호에 그대로 사용
+        const requestedCode = makeOcutPhotoCode();
+        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.74);
+
+        const result = await submitToAppsScriptPayload({
+          code: requestedCode,
+          mimeType: "image/jpeg",
+          imageBase64
+        });
+
+        const savedCode = String(result.code || requestedCode);
+        photoCode.textContent = savedCode;
+        if(phoneDownloadLink){
+          phoneDownloadLink.href = `${APPS_SCRIPT_URL}?code=${encodeURIComponent(savedCode)}`;
+          phoneDownloadLink.style.display = "none";
+        }
+
+        btnPhoneDownload.textContent = "사진 번호 다시 만들기";
+        btnPhoneDownload.disabled = false;
+
+        if(result.fallback){
+          toast("저장 요청 완료. Drive에서 번호를 확인하세요.", 1600);
+        }
+        speakNow("사진 번호가 생성되었습니다. 휴대폰에서 번호를 입력하세요.");
+      }catch(err){
+        console.error(err);
+
+        openModal(
+          "사진 번호 생성 오류",
+          err.message || "사진 번호를 만들 수 없습니다.",
+          "Apps Script 배포 설정에서 실행 권한이 '나', 액세스 권한이 '모든 사용자'인지 확인하세요. 새 배포를 만들었다면 index.html의 APPS_SCRIPT_URL도 새 주소로 바꿔야 합니다."
+        );
+
+        photoCode.textContent = "------";
+        shareBox.style.display = "none";
+        btnPhoneDownload.textContent = "사진 번호 만들기";
+        btnPhoneDownload.disabled = false;
+      }
+    }
+
+
+    btnSave.addEventListener('click', exportPNG);
+    btnHome.addEventListener('click', goHome);
+    btnPhoneDownload.addEventListener('click', uploadToGoogleDriveWithCode);
+
+    // =========================
+    // 초기화
+    // =========================
+    (async function init(){
+      resetShots();
+      textInput.value = '오늘 네컷 · O.cut';
+      applyCSSFilter();
+      renderFilterButtons();
+      await checkFramesAndRender();
+
+      // ✅ 문구 기본 OFF
+      setTextEnabled(false);
+
+      refreshAllPreviews();
+      show('start');
+    })();
+  </script>
+</body>
+</html>
 
       --pri:#2563eb;
       --pri2:#60a5fa;
