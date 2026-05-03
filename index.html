@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>O.cut · 오늘 네컷</title>
 
   <style>
@@ -1010,6 +1013,44 @@
     }
 
     // =========================
+    // 전체화면 전환
+    // =========================
+    function isKioskFullscreen(){
+      return !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
+      );
+    }
+
+    async function enterKioskFullscreen(){
+      if(isKioskFullscreen()) return true;
+
+      const el = document.documentElement;
+      try{
+        if(el.requestFullscreen){
+          try{
+            await el.requestFullscreen({ navigationUI: 'hide' });
+          }catch(firstErr){
+            await el.requestFullscreen();
+          }
+          return true;
+        }
+        if(el.webkitRequestFullscreen){
+          el.webkitRequestFullscreen();
+          return true;
+        }
+        if(el.msRequestFullscreen){
+          el.msRequestFullscreen();
+          return true;
+        }
+      }catch(err){
+        console.log('fullscreen failed', err);
+      }
+      return false;
+    }
+
+    // =========================
     // 모달
     // =========================
     const modal = document.getElementById('modal');
@@ -1877,6 +1918,7 @@
     }
 
     async function startFlow(){
+      await enterKioskFullscreen();
       await unlockAudio();
       playReadySound();
       resetShots();
