@@ -1905,7 +1905,9 @@
     // Google Drive / Apps Script 사진 번호 다운로드 연동
     // =========================
     // ✅ Apps Script 웹 앱 URL
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyk1D_C8iQ4VXhj0j_WwtDukuN43GL-DQVO1vxg4BezjWmwdCriI8kG2g2D_xOoJTQ-sw/exec";
+    // - 기존 배포를 '새 버전'으로 수정 배포하면 보통 URL은 그대로 유지됩니다.
+    // - 새 배포를 만들었다면 아래 URL만 새 웹 앱 URL로 바꾸세요.
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMY0z6iAnvlTCv0y-ojCQuaPjMImqf-yUBug5BzC1NTBOmDKVzSpOgT5e31k2oca7hyw/exec";
 
     let ocutUploadFrame = null;
     let ocutUploadForm = null;
@@ -1920,10 +1922,16 @@
       return String(Math.floor(100000 + Math.random() * 900000));
     }
 
+    function normalizeOcutCode(value){
+      const digits = String(value == null ? "" : value).replace(/\D/g, "");
+      if(!digits) return "";
+      return digits.length >= 6 ? digits.slice(-6) : digits.padStart(6, "0");
+    }
+
     // ✅ Apps Script 전송 안정성을 위해 최종 이미지를 작게 압축
-    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.72) {
-      const maxW = 900;
-      const maxH = 1350;
+    function canvasToBase64(canvas, type = "image/jpeg", quality = 0.68) {
+      const maxW = 800;
+      const maxH = 1200;
       const scale = Math.min(1, maxW / canvas.width, maxH / canvas.height);
 
       const out = document.createElement("canvas");
@@ -1963,43 +1971,94 @@
       document.body.appendChild(ocutUploadForm);
     }
 
-    // ✅ 기다리지 않는다: 번호와 이미지를 같은 payload로 보내기만 한다.
-    // 화면에 보이는 번호와 Drive 파일명 번호는 이 payload.code 하나만 사용한다.
+    function buildOcutUrl(params){
+      const url = new URL(APPS_SCRIPT_URL);
+      Object.entries(params || {}).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      url.searchParams.set("t", Date.now());
+      return url.toString();
+    }
+
+    // ✅ 업로드는 hidden form으로 보냄: CORS 문제 회피
     function submitOcutUpload(payload){
       if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("여기에_")){
         throw new Error("Apps Script 웹 앱 URL이 설정되지 않았습니다.");
       }
 
       ensureOcutUploadForm();
-      ocutUploadForm.action = APPS_SCRIPT_URL + "?mode=upload&t=" + Date.now();
+      ocutUploadForm.action = buildOcutUrl({ mode: "upload" });
       ocutPayloadInput.value = JSON.stringify(payload);
       ocutUploadForm.submit();
+    }
+
+    // ✅ 저장 확인은 JSONP로 함: GitHub Pages ↔ Apps Script CORS 문제 회피
+    function checkOcutDriveByCode(code){
+      return new Promise((resolve) => {
+        const cbName = "__ocutCheck_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+        const script = document.createElement("script");
+        let done = false;
+
+        function cleanup(result){
+          if(done) return;
+          done = true;
+          try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+          try{ script.remove(); }catch(e){}
+          resolve(result || { ok:false, error:"CHECK_FAILED" });
+        }
+
+        window[cbName] = function(result){ cleanup(result); };
+        script.onerror = function(){ cleanup({ ok:false, error:"CHECK_SCRIPT_ERROR" }); };
+        script.src = buildOcutUrl({ mode:"check", code: normalizeOcutCode(code), callback: cbName });
+        document.body.appendChild(script);
+
+        setTimeout(() => cleanup({ ok:false, error:"CHECK_TIMEOUT" }), 2500);
+      });
+    }
+
+    async function waitForDriveSave(code){
+      // 업로드 직후 Apps Script/Drive 반영 시간이 있어서 여러 번 확인
+      for(let i = 0; i < 8; i += 1){
+        const result = await checkOcutDriveByCode(code);
+        if(result && result.ok && result.code === code) return result;
+        await sleep(750);
+      }
+      throw new Error("Drive 저장 확인 실패: 업로드는 시도했지만 해당 번호 파일을 찾지 못했습니다.");
     }
 
     async function uploadToGoogleDriveWithCode(){
       try{
         btnPhoneDownload.disabled = true;
-        btnPhoneDownload.textContent = "사진 번호 만드는 중";
+        btnPhoneDownload.textContent = "사진 합성 중";
         shareBox.style.display = "block";
         photoCode.textContent = "------";
 
         await renderComposite(exportCanvas);
 
         const code = makeOcutPhotoCode();
-        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.72);
+        const imageBase64 = canvasToBase64(exportCanvas, "image/jpeg", 0.68);
 
-        // ✅ 이 번호 하나로만 저장한다.
+        btnPhoneDownload.textContent = "Drive 저장 중";
+
+        // ✅ 화면 표시 번호, payload 번호, Drive 파일명 번호가 모두 code 하나만 사용함
         submitOcutUpload({
           code: code,
+          displayCode: code,
+          photoCode: code,
           mimeType: "image/jpeg",
           imageBase64: imageBase64
         });
 
-        // ✅ 서버 응답을 기다리지 않음. 사용자에게 같은 번호를 바로 보여줌.
+        btnPhoneDownload.textContent = "저장 확인 중";
+        await waitForDriveSave(code);
+
+        // ✅ Drive에 실제 저장된 뒤에만 사용자에게 번호 표시
         photoCode.textContent = code;
         if(phoneDownloadLink){
-          phoneDownloadLink.href = APPS_SCRIPT_URL + "?code=" + encodeURIComponent(code);
-          phoneDownloadLink.style.display = "none";
+          phoneDownloadLink.href = buildOcutUrl({ mode:"download", code: code });
+          phoneDownloadLink.style.display = "inline-block";
+          phoneDownloadLink.setAttribute("aria-hidden", "false");
+          phoneDownloadLink.textContent = "휴대폰 다운로드 페이지 열기";
         }
 
         btnPhoneDownload.textContent = "사진 번호 다시 만들기";
@@ -2011,7 +2070,7 @@
         openModal(
           "사진 번호 생성 오류",
           err.message || "사진 번호를 만들 수 없습니다.",
-          "사진 합성 또는 업로드 준비 중 오류가 발생했습니다. 다시 시도해 주세요."
+          "Apps Script 배포 권한, FOLDER_ID, Drive 폴더 접근 권한, 새 버전 배포 여부를 확인해 주세요."
         );
         photoCode.textContent = "------";
         shareBox.style.display = "none";
@@ -2019,6 +2078,7 @@
         btnPhoneDownload.disabled = false;
       }
     }
+
 
     btnSave.addEventListener('click', exportPNG);
     btnHome.addEventListener('click', goHome);
