@@ -1608,7 +1608,9 @@
     let selectedFilter = FILTERS[0];
 
     function applyCSSFilter(){
-      document.documentElement.style.setProperty('--active-filter', selectedFilter.css);
+      // 촬영 화면(video)과 촬영 썸네일에는 이전 사용자의 필터가 절대 남지 않게 고정
+      // 실제 필터는 renderComposite()에서 최종 미리보기/저장본에만 적용됨
+      document.documentElement.style.setProperty('--active-filter', 'none');
     }
 
     function renderFilterButtons(){
@@ -2267,7 +2269,11 @@
       await unlockAudio();
       playReadySound();
       resetShots();
+
+      // ✅ 새 사용자 시작 시 이전 사용자의 필터 선택값 초기화
+      selectedFilter = FILTERS[0];
       applyCSSFilter();
+      renderFilterButtons();
 
       // ✅ 문구 기본 OFF
       setTextEnabled(false);
