@@ -6,7 +6,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>O.cut · 오늘 네컷</title>
+  <title>O.cut</title>
 
   <style>
     :root{
@@ -966,7 +966,7 @@
       <div class="brand">
         <span class="logo"></span>
         <div class="brandText">
-          <b>오늘 네컷</b>
+          <b>o.cut</b>
           <small>O.cut</small>
         </div>
       </div>
@@ -987,7 +987,7 @@
 
             <div class="startCard">
               <h1 class="startTitle">O.cut</h1>
-              <div class="startSub">오늘 네컷</div>
+              <div class="startSub">o.cut</div>
               <div class="startHint"><span class="pulse"></span>클릭하시면 시작됩니다.</div>
 
               <div class="startBtnRow">
@@ -1873,7 +1873,7 @@
 
       // 3) 문구(선택)
       if(textEnabled){
-        const txt = (textInput.value || '오늘 네컷 · O.cut').trim();
+        const txt = (textInput.value || 'O.cut').trim();
         const fontPx = Math.max(14, Math.min(52, Number(textSize.value) || 22));
         const bottomPct = Math.max(2, Math.min(18, Number(textPos.value) || 6));
         const scaledFont = Math.round(fontPx * (baseW / 1356));
@@ -2593,7 +2593,7 @@
     // =========================
     (async function init(){
       resetShots();
-      textInput.value = '오늘 네컷 · O.cut';
+      textInput.value = 'O.cut';
       applyCSSFilter();
       renderFilterButtons();
       await checkFramesAndRender();
